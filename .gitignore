@@ -1,0 +1,6 @@
+# Firebase - jangan di-commit ke repo publik
+google-services.json
+
+# OS
+.DS_Store
+Thumbs.db

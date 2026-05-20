@@ -1,0 +1,362 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Tukang;
+use App\Models\Layanan;
+use App\Models\Order;
+use App\Models\Review;
+use App\Models\Chat;
+use App\Models\Notifikasi;
+use Illuminate\Http\Request;
+
+class AdminController extends Controller
+{
+    // ─── Auth ────────────────────────────────────────────────────────────────
+
+    public function showLogin()
+    {
+        if (session('is_admin')) return redirect()->route('admin.dashboard');
+        return view('admin.login');
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $adminUser = config('app.admin_user', 'admin');
+        $adminPass = config('app.admin_pass', 'admin123');
+
+        if ($request->username === $adminUser && $request->password === $adminPass) {
+            session(['is_admin' => true, 'admin_username' => $adminUser]);
+            return redirect()->route('admin.dashboard');
+        }
+
+        return back()->with('error', 'Username atau password salah.')->withInput();
+    }
+
+    public function logout()
+    {
+        session()->forget(['is_admin', 'admin_username']);
+        return redirect()->route('admin.login')->with('success', 'Berhasil logout.');
+    }
+
+    // ─── Dashboard ───────────────────────────────────────────────────────────
+
+    public function dashboard(Request $request)
+    {
+        // ── Filters ──────────────────────────────────────────────────────────
+        $period   = in_array($request->query('period'), ['today','week','month','all'])
+                        ? $request->query('period') : 'month';
+        $tukangId = $request->query('tukang_id', '');
+        $view     = in_array($request->query('view'), ['summary','workers','customers','orders','performance'])
+                        ? $request->query('view') : 'summary';
+
+        $from = match($period) {
+            'today' => now()->startOfDay(),
+            'week'  => now()->startOfWeek(),
+            'month' => now()->startOfMonth(),
+            default => null,
+        };
+
+        $periodLabel = match($period) {
+            'today' => 'Hari Ini (' . now()->format('d M Y') . ')',
+            'week'  => 'Minggu Ini (' . now()->startOfWeek()->format('d M') . ' – ' . now()->endOfWeek()->format('d M Y') . ')',
+            'month' => 'Bulan Ini (' . now()->format('F Y') . ')',
+            default => 'Semua Waktu',
+        };
+
+        // ── Base queries ──────────────────────────────────────────────────────
+        $ordersQ = Order::query()
+            ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
+            ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId));
+
+        $reviewsQ = Review::query()
+            ->when($from || $tukangId, fn($q) =>
+                $q->whereHas('order', fn($oq) =>
+                    $oq->when($from,     fn($x) => $x->where('created_at', '>=', $from))
+                       ->when($tukangId, fn($x) => $x->where('id_tukang',  $tukangId))
+                )
+            );
+
+        // ── Stats ─────────────────────────────────────────────────────────────
+        $stats = [
+            'users'        => User::count(),
+            'tukang'       => Tukang::count(),
+            'tukang_aktif' => Tukang::where('status_aktif', 1)->count(),
+            'orders'       => $ordersQ->count(),
+            'reviews'      => $reviewsQ->count(),
+            'orders_total' => Order::count(),
+            'avg_rating'   => round((float) $reviewsQ->avg('rating'), 1),
+        ];
+
+        $tukangList = Tukang::orderBy('nama')->get(['id_tukang', 'nama']);
+
+        // ── Tukang Performance ────────────────────────────────────────────────
+        $tukangPerformance = Tukang::with(['orders' => function ($q) use ($from, $tukangId) {
+                if ($from)     $q->where('created_at', '>=', $from);
+                if ($tukangId) $q->where('id_tukang',  $tukangId);
+                $q->with('review');
+            }])
+            ->when($tukangId, fn($q) => $q->where('id_tukang', $tukangId))
+            ->get()
+            ->map(function ($t) {
+                $orders  = $t->orders;
+                $ratings = $orders->map(fn($o) => optional($o->review)->rating)->filter();
+                return [
+                    'id'            => $t->id_tukang,
+                    'nama'          => $t->nama,
+                    'kategori'      => $t->kategori,
+                    'status_aktif'  => $t->status_aktif,
+                    'tarif'         => $t->tarif ?? 0,
+                    'orders_count'  => $orders->count(),
+                    'reviews_count' => $ratings->count(),
+                    'avg_rating'    => $ratings->count() ? round($ratings->avg(), 1) : 0,
+                    'revenue'       => $orders->count() * ($t->tarif ?? 0),
+                ];
+            })
+            ->sortByDesc('orders_count')
+            ->values();
+
+        $topWorkers = $tukangPerformance->take(10);
+
+        $topRated = $tukangPerformance
+            ->filter(fn($t) => $t['reviews_count'] > 0)
+            ->sortByDesc('avg_rating')
+            ->take(5)
+            ->values();
+
+        // ── Top Customers ─────────────────────────────────────────────────────
+        $topCustomers = User::withCount(['orders as orders_count' => function ($q) use ($from, $tukangId) {
+                if ($from)     $q->where('created_at', '>=', $from);
+                if ($tukangId) $q->where('id_tukang',  $tukangId);
+            }])
+            ->orderByDesc('orders_count')
+            ->limit(10)
+            ->get();
+
+        // ── Chart ─────────────────────────────────────────────────────────────
+        $chartLabels = [];
+        $chartData   = [];
+        if ($period === 'today') {
+            for ($h = 0; $h < 24; $h += 2) {
+                $chartLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+                $start = now()->startOfDay()->addHours($h);
+                $end   = $start->copy()->addHours(2);
+                $q     = Order::whereBetween('created_at', [$start, $end]);
+                if ($tukangId) $q->where('id_tukang', $tukangId);
+                $chartData[] = $q->count();
+            }
+        } else {
+            $chartDays = $period === 'week' ? 7 : ($period === 'month' ? 30 : 14);
+            for ($i = $chartDays - 1; $i >= 0; $i--) {
+                $day           = now()->subDays($i);
+                $chartLabels[] = $day->format('d/m');
+                $q = Order::whereDate('created_at', $day->toDateString());
+                if ($tukangId) $q->where('id_tukang', $tukangId);
+                $chartData[] = $q->count();
+            }
+        }
+
+        // ── Recent Orders ─────────────────────────────────────────────────────
+        $recentOrders = Order::with(['user', 'tukang', 'layanan', 'review'])
+            ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
+            ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId))
+            ->orderByDesc('id_order')
+            ->limit(10)
+            ->get();
+
+        return view('admin.dashboard', compact(
+            'stats', 'recentOrders', 'tukangPerformance',
+            'topRated', 'topWorkers', 'topCustomers',
+            'tukangList', 'period', 'tukangId', 'periodLabel',
+            'chartLabels', 'chartData', 'view'
+        ));
+    }
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+
+    public function users(Request $request)
+    {
+        $q = $request->query('q');
+        $users = User::when($q, fn($query) => $query->where('nama', 'like', "%$q%")
+                                                     ->orWhere('no_hp', 'like', "%$q%"))
+                     ->orderByDesc('id_user')->paginate(15);
+        return view('admin.users.index', compact('users', 'q'));
+    }
+
+    public function deleteUser($id)
+    {
+        User::findOrFail($id)->delete();
+        return back()->with('success', 'User berhasil dihapus.');
+    }
+
+    // ─── Tukang ──────────────────────────────────────────────────────────────
+
+    public function tukang(Request $request)
+    {
+        $q = $request->query('q');
+        $list = Tukang::when($q, fn($query) => $query->where('nama', 'like', "%$q%")
+                                                      ->orWhere('kategori', 'like', "%$q%"))
+                      ->orderByDesc('id_tukang')->paginate(15);
+        $layananList = Layanan::all();
+        return view('admin.tukang.index', compact('list', 'q', 'layananList'));
+    }
+
+    public function createTukang()
+    {
+        $layanan = Layanan::all();
+        return view('admin.tukang.form', compact('layanan'));
+    }
+
+    public function storeTukang(Request $request)
+    {
+        $request->validate([
+            'nama'        => 'required|string|max:100',
+            'kategori'    => 'required|string|max:100',
+            'lokasi'      => 'nullable|string|max:100',
+            'bio'         => 'nullable|string|max:500',
+            'tarif'       => 'nullable|numeric|min:0',
+            'status_aktif'=> 'required|in:0,1',
+            'foto'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $fotoPath = null;
+        if ($request->hasFile('foto')) {
+            $fotoPath = $request->file('foto')->store('tukang', 'public');
+        }
+
+        Tukang::create([
+            'nama'         => $request->nama,
+            'kategori'     => $request->kategori,
+            'lokasi'       => $request->lokasi,
+            'bio'          => $request->bio,
+            'tarif'        => $request->tarif,
+            'status_aktif' => $request->status_aktif,
+            'foto'         => $fotoPath,
+        ]);
+
+        return redirect()->route('admin.tukang')->with('success', 'Tukang berhasil ditambahkan.');
+    }
+
+    public function editTukang($id)
+    {
+        $tukang  = Tukang::findOrFail($id);
+        $layanan = Layanan::all();
+        return view('admin.tukang.form', compact('tukang', 'layanan'));
+    }
+
+    public function updateTukang(Request $request, $id)
+    {
+        $tukang = Tukang::findOrFail($id);
+        $request->validate([
+            'nama'        => 'required|string|max:100',
+            'kategori'    => 'required|string|max:100',
+            'lokasi'      => 'nullable|string|max:100',
+            'bio'         => 'nullable|string|max:500',
+            'tarif'       => 'nullable|numeric|min:0',
+            'status_aktif'=> 'required|in:0,1',
+            'foto'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $data = [
+            'nama'         => $request->nama,
+            'kategori'     => $request->kategori,
+            'lokasi'       => $request->lokasi,
+            'bio'          => $request->bio,
+            'tarif'        => $request->tarif,
+            'status_aktif' => $request->status_aktif,
+        ];
+
+        if ($request->hasFile('foto')) {
+            if ($tukang->foto) {
+                \Storage::disk('public')->delete($tukang->foto);
+            }
+            $data['foto'] = $request->file('foto')->store('tukang', 'public');
+        }
+
+        if ($request->boolean('hapus_foto') && $tukang->foto) {
+            \Storage::disk('public')->delete($tukang->foto);
+            $data['foto'] = null;
+        }
+
+        $tukang->update($data);
+
+        return redirect()->route('admin.tukang')->with('success', 'Tukang berhasil diperbarui.');
+    }
+
+    public function deleteTukang($id)
+    {
+        Tukang::findOrFail($id)->delete();
+        return back()->with('success', 'Tukang berhasil dihapus.');
+    }
+
+    // ─── Layanan ─────────────────────────────────────────────────────────────
+
+    public function layanan()
+    {
+        $layanan = Layanan::orderBy('id_layanan')->get();
+        return view('admin.layanan.index', compact('layanan'));
+    }
+
+    public function storeLayanan(Request $request)
+    {
+        $request->validate(['nama_layanan' => 'required|string|max:100|unique:layanan,nama_layanan']);
+        Layanan::create(['nama_layanan' => $request->nama_layanan]);
+        return back()->with('success', 'Layanan berhasil ditambahkan.');
+    }
+
+    public function updateLayanan(Request $request, $id)
+    {
+        $layanan = Layanan::findOrFail($id);
+        $request->validate(['nama_layanan' => 'required|string|max:100|unique:layanan,nama_layanan,' . $id . ',id_layanan']);
+        $layanan->update(['nama_layanan' => $request->nama_layanan]);
+        return back()->with('success', 'Layanan berhasil diperbarui.');
+    }
+
+    public function deleteLayanan($id)
+    {
+        Layanan::findOrFail($id)->delete();
+        return back()->with('success', 'Layanan berhasil dihapus.');
+    }
+
+    // ─── Orders ──────────────────────────────────────────────────────────────
+
+    public function orders(Request $request)
+    {
+        $q = $request->query('q');
+        $orders = Order::with(['user', 'tukang', 'layanan', 'review'])
+                       ->when($q, fn($query) => $query->whereHas('user', fn($u) => $u->where('nama', 'like', "%$q%"))
+                                                       ->orWhereHas('tukang', fn($t) => $t->where('nama', 'like', "%$q%")))
+                       ->orderByDesc('id_order')->paginate(15);
+        return view('admin.orders.index', compact('orders', 'q'));
+    }
+
+    public function deleteOrder($id)
+    {
+        Order::findOrFail($id)->delete();
+        return back()->with('success', 'Order berhasil dihapus.');
+    }
+
+    // ─── Reviews ─────────────────────────────────────────────────────────────
+
+    public function reviews(Request $request)
+    {
+        $q = $request->query('q');
+        $reviews = Review::with(['order.user', 'order.tukang'])
+                         ->when($q, fn($query) => $query->whereHas('order.tukang', fn($t) => $t->where('nama', 'like', "%$q%")))
+                         ->orderByDesc('id_review')->paginate(15);
+        return view('admin.reviews.index', compact('reviews', 'q'));
+    }
+
+    public function deleteReview($id)
+    {
+        Review::findOrFail($id)->delete();
+        return back()->with('success', 'Review berhasil dihapus.');
+    }
+}

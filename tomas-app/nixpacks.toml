@@ -1,0 +1,29 @@
+# PHP version and extensions for Railway/Nixpacks
+[phases.setup]
+nixPkgs = [
+    "php81",
+    "php81Extensions.pdo_mysql",
+    "php81Extensions.mbstring",
+    "php81Extensions.tokenizer",
+    "php81Extensions.xml",
+    "php81Extensions.ctype",
+    "php81Extensions.json",
+    "php81Extensions.bcmath",
+    "php81Extensions.curl",
+    "php81Extensions.openssl",
+    "php81Extensions.fileinfo",
+    "php81Extensions.gd",
+    "php81Extensions.zip",
+    "php81Extensions.intl",
+    "composer",
+]
+
+[phases.build]
+cmds = [
+    "composer install --no-dev --optimize-autoloader --no-interaction",
+    "php artisan config:clear",
+    "php artisan view:clear",
+]
+
+[start]
+cmd = "bash start.sh"
