@@ -11,7 +11,7 @@
 /// ─────────────────────────────────────────────────────────────────────────
 class AppConfig {
   /// Base URL server backend (tanpa trailing slash, tanpa /api)
-  static const String serverUrl = 'https://tomas-production.up.railway.app';
+  static const String serverUrl = 'http://10.50.15.205:8000';
 
   /// Full API base URL (digunakan oleh ApiService)
   static const String apiBaseUrl = '$serverUrl/api';

@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       width: 38,
                       height: 38,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _avatarPh(),
+                      errorBuilder: (_, _, _) => _avatarPh(),
                     )
                   : _avatarPh(),
             ),

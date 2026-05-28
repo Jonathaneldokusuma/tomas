@@ -12,8 +12,9 @@ class Order extends Model
 
     protected $fillable = [
         'id_user', 'id_tukang', 'id_layanan',
-        'alamat', 'tanggal_kerja', 'jam_mulai', 'durasi',
-        'deskripsi', 'metode_bayar', 'status',
+        'alamat', 'latitude', 'longitude', 'tanggal_kerja', 'jam_mulai', 'durasi',
+        'deskripsi', 'catatan_tukang', 'metode_bayar', 'status',
+        'bukti_bayar', 'status_payment',
     ];
 
     public $timestamps = true;

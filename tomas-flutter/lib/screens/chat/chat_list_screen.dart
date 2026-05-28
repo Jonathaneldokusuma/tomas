@@ -141,7 +141,7 @@ class _ChatItem extends StatelessWidget {
                       width: 52,
                       height: 52,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _ph(),
+                      errorBuilder: (_, _, _) => _ph(),
                     )
                   : _ph(),
             ),

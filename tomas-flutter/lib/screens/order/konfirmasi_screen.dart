@@ -3,6 +3,8 @@ import '../../services/api_service.dart';
 import '../../models/tukang.dart';
 import '../../models/layanan.dart';
 import 'order_success_screen.dart';
+import 'map_picker_screen.dart';
+import 'package:latlong2/latlong.dart';
 
 const _kBlue = Color(0xFF2563EB);
 const _kBg = Color(0xFFF2F2F7);
@@ -31,6 +33,7 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
   String _durasi = '';
   String _metodeBayar = 'Tunai';
   String _alamat = 'Jl. Melati No. 12, RT 03/04, Surakarta';
+  LatLng? _koordinat;
   DateTime _tanggal = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _jam = const TimeOfDay(hour: 8, minute: 0);
   final _deskripsiCtrl = TextEditingController();
@@ -165,12 +168,18 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
       _snack('Isi alamat pengerjaan dulu!');
       return;
     }
+    if (_koordinat == null) {
+      _snack('Pilih lokasi di peta!');
+      return;
+    }
     setState(() => _loading = true);
     try {
       final res = await ApiService.createOrder(
         widget.tukang.idTukang,
         _layananId,
         alamat: _alamat,
+        latitude: _koordinat!.latitude,
+        longitude: _koordinat!.longitude,
         tanggalKerja: _tanggalStr,
         jamMulai: _jamStr,
         durasi: _durasi.isEmpty ? null : _durasi,
@@ -240,8 +249,7 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
                           width: 64,
                           height: 64,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _avatarPlaceholder(t.nama),
+                          errorBuilder: (_, _, _) => _avatarPlaceholder(t.nama),
                         )
                       : _avatarPlaceholder(t.nama),
                 ),
@@ -299,7 +307,7 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            t.rating?.toStringAsFixed(1) ?? '5.0',
+                            t.rating.toStringAsFixed(1) ?? '5.0',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -493,13 +501,13 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Alamat ────────────────────────────────────────────────────
+          // ── Alamat & Lokasi ───────────────────────────────────────────
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Alamat Pengerjaan',
+                  'Alamat & Lokasi Pengerjaan',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 10),
@@ -545,6 +553,43 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
                     ),
                     contentPadding: const EdgeInsets.all(12),
                   ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final picked = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  MapPickerScreen(initial: _koordinat),
+                            ),
+                          );
+                          if (picked != null && picked is LatLng) {
+                            setState(() {
+                              _koordinat = picked;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.map),
+                        label: Text(
+                          _koordinat == null
+                              ? 'Pilih Lokasi di Peta'
+                              : 'Lokasi dipilih: [1m${_koordinat!.latitude.toStringAsFixed(5)}, ${_koordinat!.longitude.toStringAsFixed(5)}[0m',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

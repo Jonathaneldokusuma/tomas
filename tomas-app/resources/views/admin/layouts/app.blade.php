@@ -56,6 +56,20 @@
         <a href="{{ route('admin.reviews') }}" class="nav-item {{ request()->routeIs('admin.reviews') ? 'active' : '' }}">
             <i class="fas fa-star"></i><span>Reviews</span>
         </a>
+        <div style="padding:6px 12px;font-size:10px;font-weight:700;color:#3b5f8a;text-transform:uppercase;letter-spacing:.08em;margin-top:6px">Monitoring</div>
+        <a href="{{ route('admin.tukang.verifikasi') }}" class="nav-item {{ request()->routeIs('admin.tukang.verifikasi') ? 'active' : '' }}">
+            <i class="fas fa-id-card-clip"></i><span>Verifikasi</span>
+            @php $pendingCount = \App\Models\Tukang::where('status_verifikasi','pending')->count(); @endphp
+            @if($pendingCount > 0)
+            <span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">{{ $pendingCount }}</span>
+            @endif
+        </a>
+        <a href="{{ route('admin.pembayaran') }}" class="nav-item {{ request()->routeIs('admin.pembayaran*') ? 'active' : '' }}">
+            <i class="fas fa-money-bill-transfer"></i><span>Pembayaran</span>
+        </a>
+        <a href="{{ route('admin.broadcast') }}" class="nav-item {{ request()->routeIs('admin.broadcast*') ? 'active' : '' }}">
+            <i class="fas fa-bullhorn"></i><span>Broadcast</span>
+        </a>
     </nav>
 
     {{-- Bottom --}}

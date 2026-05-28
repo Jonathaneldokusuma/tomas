@@ -143,8 +143,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty)
+                    if (v == null || v.trim().isEmpty) {
                       return 'No. HP tidak boleh kosong';
+                    }
                     if (v.trim().length < 9) return 'No. HP tidak valid';
                     return null;
                   },
@@ -166,7 +167,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
               title: 'Password',
               trailing: Switch(
                 value: _changePass,
-                activeColor: const Color(0xFF007AFF),
+                activeThumbColor: const Color(0xFF007AFF),
                 onChanged: (v) => setState(() {
                   _changePass = v;
                   if (!v) {
@@ -196,8 +197,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                     onToggle: () => setState(() => _showPass = !_showPass),
                     validator: (v) {
                       if (!_changePass) return null;
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return 'Password tidak boleh kosong';
+                      }
                       if (v.length < 6) return 'Password minimal 6 karakter';
                       return null;
                     },
@@ -350,7 +352,7 @@ class _SectionCard extends StatelessWidget {
                   letterSpacing: 0.5,
                 ),
               ),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
         ),

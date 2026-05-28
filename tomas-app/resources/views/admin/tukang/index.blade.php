@@ -110,6 +110,25 @@
                                     <i class="fas fa-trash" style="font-size:10px"></i>
                                 </button>
                             </form>
+                            {{-- Ban / Unban --}}
+                            @if($tukang->status_aktif)
+                            <form action="{{ route('admin.tukang.ban', $tukang->id_tukang) }}" method="POST" style="display:inline"
+                                  onsubmit="return confirm('Nonaktifkan {{ addslashes($tukang->nama) }}?')">
+                                @csrf
+                                <button type="submit" title="Nonaktifkan"
+                                    style="width:28px;height:28px;border:1px solid #fed7aa;border-radius:7px;background:#fff7ed;display:flex;align-items:center;justify-content:center;color:#ea580c;cursor:pointer">
+                                    <i class="fas fa-ban" style="font-size:10px"></i>
+                                </button>
+                            </form>
+                            @else
+                            <form action="{{ route('admin.tukang.unban', $tukang->id_tukang) }}" method="POST" style="display:inline">
+                                @csrf
+                                <button type="submit" title="Aktifkan kembali"
+                                    style="width:28px;height:28px;border:1px solid #6ee7b7;border-radius:7px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;color:#16a34a;cursor:pointer">
+                                    <i class="fas fa-check-circle" style="font-size:10px"></i>
+                                </button>
+                            </form>
+                            @endif
                         </div>
                     </td>
                 </tr>

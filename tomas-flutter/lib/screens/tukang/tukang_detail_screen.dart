@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../services/api_service.dart';
 import '../../models/tukang.dart';
 import '../../models/layanan.dart';
@@ -197,7 +199,7 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                   ? Image.network(
                       t.fotoUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _headerPlaceholder(),
+                      errorBuilder: (_, _, _) => _headerPlaceholder(),
                     )
                   : _headerPlaceholder(),
             ),
@@ -302,6 +304,61 @@ class _TukangDetailScreenState extends State<TukangDetailScreen> {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 12),
+
+                  // Lokasi tukang di peta
+                  if (t.latitude != null && t.longitude != null)
+                    Container(
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                            child: Row(children: [
+                              const Icon(Icons.location_on, color: Color(0xFF2563EB), size: 18),
+                              const SizedBox(width: 8),
+                              const Text('Lokasi Area Kerja', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
+                            ]),
+                          ),
+                          SizedBox(
+                            height: 180,
+                            child: FlutterMap(
+                              options: MapOptions(
+                                initialCenter: LatLng(t.latitude!, t.longitude!),
+                                initialZoom: 14,
+                                interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.tomas.tomas_app',
+                                ),
+                                MarkerLayer(markers: [
+                                  Marker(
+                                    point: LatLng(t.latitude!, t.longitude!),
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(Icons.location_pin, color: Color(0xFF2563EB), size: 40),
+                                  ),
+                                ]),
+                              ],
+                            ),
+                          ),
+                          if (t.alamat != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                const Icon(Icons.home_outlined, size: 14, color: Colors.grey),
+                                const SizedBox(width: 6),
+                                Expanded(child: Text(t.alamat!, style: const TextStyle(fontSize: 12, color: Colors.black54))),
+                              ]),
+                            ),
+                        ],
+                      ),
+                    ),
 
                   const SizedBox(height: 12),
 

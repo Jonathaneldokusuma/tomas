@@ -78,4 +78,24 @@ Route::prefix('admin')->middleware('admin')->group(function () {
     Route::delete('/orders/{id}',      [AdminController::class, 'deleteOrder'])->name('admin.orders.delete');
     Route::get('/reviews',             [AdminController::class, 'reviews'])->name('admin.reviews');
     Route::delete('/reviews/{id}',     [AdminController::class, 'deleteReview'])->name('admin.reviews.delete');
+
+    // Tukang verifikasi & ban
+    Route::get('/tukang/verifikasi',        [AdminController::class, 'verifikasiTukang'])->name('admin.tukang.verifikasi');
+    Route::post('/tukang/{id}/approve',     [AdminController::class, 'approveTukang'])->name('admin.tukang.approve');
+    Route::post('/tukang/{id}/reject',      [AdminController::class, 'rejectTukang'])->name('admin.tukang.reject');
+    Route::post('/tukang/{id}/ban',         [AdminController::class, 'banTukang'])->name('admin.tukang.ban');
+    Route::post('/tukang/{id}/unban',       [AdminController::class, 'unbanTukang'])->name('admin.tukang.unban');
+
+    // User ban
+    Route::post('/users/{id}/ban',          [AdminController::class, 'banUser'])->name('admin.users.ban');
+    Route::post('/users/{id}/unban',        [AdminController::class, 'unbanUser'])->name('admin.users.unban');
+
+    // Monitoring pembayaran
+    Route::get('/pembayaran',               [AdminController::class, 'pembayaran'])->name('admin.pembayaran');
+    Route::post('/pembayaran/{id}/konfirmasi', [AdminController::class, 'konfirmasiPembayaran'])->name('admin.pembayaran.konfirmasi');
+
+    // Broadcast pesan ke tukang
+    Route::get('/broadcast',                [AdminController::class, 'broadcast'])->name('admin.broadcast');
+    Route::post('/broadcast',               [AdminController::class, 'storeBroadcast'])->name('admin.broadcast.store');
+    Route::delete('/broadcast/{id}',        [AdminController::class, 'deleteBroadcast'])->name('admin.broadcast.delete');
 });

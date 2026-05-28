@@ -10,15 +10,44 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\PembayaranController;
 use App\Http\Controllers\Api\NotifikasiController;
+use App\Http\Controllers\Api\TukangAuthController;
+use App\Http\Controllers\Api\TukangDashboardController;
 
 // ── Public ──────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
+// Tukang Auth
+Route::post('/tukang/register', [TukangAuthController::class, 'register']);
+Route::post('/tukang/login',    [TukangAuthController::class, 'login']);
+
 Route::get('/tukang',              [TukangController::class, 'index']);
 Route::get('/tukang/by-layanan',   [TukangController::class, 'byLayanan']);
-Route::get('/tukang/{id}',         [TukangController::class, 'show']);
 Route::apiResource('/layanan',      LayananController::class)->only(['index', 'show']);
+
+// ── Tukang Dashboard (token-based) ──────────────────────────
+Route::prefix('tukang')->group(function () {
+    Route::get('/orders',                          [TukangDashboardController::class, 'orders']);
+    Route::get('/orders/pending',                  [TukangDashboardController::class, 'pendingOrders']);
+    Route::post('/orders/{id}/accept',             [TukangDashboardController::class, 'acceptOrder']);
+    Route::post('/orders/{id}/reject',             [TukangDashboardController::class, 'rejectOrder']);
+    Route::post('/orders/{id}/status',             [TukangDashboardController::class, 'updateStatus']);
+    Route::post('/orders/{id}/confirm-payment',    [TukangDashboardController::class, 'confirmPayment']);
+    Route::get('/profile',                         [TukangDashboardController::class, 'profile']);
+    Route::put('/profile',                         [TukangDashboardController::class, 'updateProfile']);
+    Route::post('/upload-ktp',                     [TukangDashboardController::class, 'uploadKtp']);
+
+    // Chat tukang ↔ pelanggan
+    Route::get('/chat',              [TukangDashboardController::class, 'chatInbox']);
+    Route::get('/chat/{id_user}',    [TukangDashboardController::class, 'chatMessages']);
+    Route::post('/chat/{id_user}',   [TukangDashboardController::class, 'chatSend']);
+
+    // Pesan dari pusat (admin broadcast)
+    Route::get('/broadcast',         [TukangDashboardController::class, 'broadcast']);
+});
+
+// Wildcard route - harus SETELAH semua specific routes
+Route::get('/tukang/{id}',         [TukangController::class, 'show']);
 
 // ── Protected (Sanctum) ─────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,6 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/orders',          [OrderController::class, 'index']);
     Route::post('/orders',         [OrderController::class, 'store']);
+    Route::get('/orders/{id}',     [OrderController::class, 'show']);
+    Route::post('/orders/{id}/upload-bukti', [OrderController::class, 'uploadBuktiBayar']);
 
     Route::post('/reviews/{id_order}', [ReviewController::class, 'store']);
 

@@ -14,7 +14,7 @@ class TukangController extends Controller
         $q       = $request->query('q');
         $layanan = $request->query('layanan');
 
-        $query = Tukang::query();
+        $query = Tukang::where('status_aktif', 1)->where('status_verifikasi', 'verified');
         if ($q) {
             $query->where(fn($q2) => $q2->where('nama', 'like', "%$q%")
                 ->orWhere('kategori', 'like', "%$q%")
@@ -50,10 +50,15 @@ class TukangController extends Controller
             'nama'         => $t->nama,
             'kategori'     => $t->kategori,
             'lokasi'       => $t->lokasi,
+            'alamat'       => $t->alamat,
             'bio'          => $t->bio,
+            'no_hp'        => $t->no_hp,
+            'tarif'        => $t->tarif,
             'status_aktif' => (bool) $t->status_aktif,
             'foto_url'     => $t->foto ? url('storage/' . $t->foto) : null,
             'rating'       => 4.7,
+            'latitude'     => $t->latitude ? (float) $t->latitude : null,
+            'longitude'    => $t->longitude ? (float) $t->longitude : null,
         ];
     }
 }

@@ -157,7 +157,7 @@ class _OrderItemState extends State<_OrderItem> {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _ph(),
+                    errorBuilder: (_, _, _) => _ph(),
                   )
                 : _ph(),
           ),

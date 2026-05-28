@@ -122,7 +122,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                                     width: 60,
                                     height: 60,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _ph(),
+                                    errorBuilder: (_, _, _) => _ph(),
                                   )
                                 : _ph(),
                           ),

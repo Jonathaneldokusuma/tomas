@@ -10,7 +10,11 @@ class Tukang extends Model
     protected $primaryKey = 'id_tukang';
     public $timestamps = true;
 
-    protected $fillable = ['nama', 'status_aktif', 'lokasi', 'kategori', 'bio', 'foto', 'tarif'];
+    protected $fillable = [
+        'nama', 'status_aktif', 'lokasi', 'alamat', 'kategori', 'bio', 'foto', 'tarif',
+        'username', 'password', 'no_hp', 'no_ktp', 'foto_ktp', 'foto_selfie',
+        'status_verifikasi', 'latitude', 'longitude',
+    ];
 
     public function orders()
     {

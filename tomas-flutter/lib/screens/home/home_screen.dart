@@ -13,6 +13,7 @@ import '../notifikasi/notifikasi_screen.dart';
 
 const _kBlue = Color(0xFF2563EB);
 const _kBlueLt = Color(0xFF3B82F6);
+const _kOrange = Color(0xFFFF6B2B);
 const _kBg = Color(0xFFF2F2F7);
 
 // ── Shell ────────────────────────────────────────────────────────────────────
@@ -34,76 +35,137 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // index 2 is the FAB "Tambah" — it's not a real page
     final pages = [
       const _HomeTab(),
       const ChatListScreen(),
+      const SizedBox(), // placeholder for Tambah (FAB)
       const OrderListScreen(),
-      const FavoritScreen(),
       const ProfilScreen(),
     ];
 
     return Scaffold(
       backgroundColor: _kBg,
-      body: IndexedStack(index: _tabIndex, children: pages),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 16,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              children: [
-                _NavItem(
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: 'Beranda',
-                  idx: 0,
-                  cur: _tabIndex,
-                  onTap: (i) => setState(() => _tabIndex = i),
+      body: IndexedStack(
+        index: _tabIndex == 2 ? 0 : _tabIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: _BottomNav(
+        current: _tabIndex,
+        onTap: (i) {
+          if (i == 2) {
+            // Tambah → go to tukang list
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TukangListScreen()),
+            );
+          } else {
+            setState(() => _tabIndex = i);
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ── Bottom Nav ────────────────────────────────────────────────────────────────
+class _BottomNav extends StatelessWidget {
+  final int current;
+  final void Function(int) onTap;
+  const _BottomNav({required this.current, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 16,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              _NavItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'Home',
+                idx: 0,
+                cur: current,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.chat_bubble_outline,
+                activeIcon: Icons.chat_bubble,
+                label: 'Chat',
+                idx: 1,
+                cur: current,
+                onTap: onTap,
+              ),
+              // Center FAB "Tambah"
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(2),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: _kBlue,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: _kBlue.withOpacity(0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Tambah',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                _NavItem(
-                  icon: Icons.chat_bubble_outline,
-                  activeIcon: Icons.chat_bubble,
-                  label: 'Chat',
-                  idx: 1,
-                  cur: _tabIndex,
-                  onTap: (i) => setState(() => _tabIndex = i),
-                ),
-                _NavItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long,
-                  label: 'Riwayat',
-                  idx: 2,
-                  cur: _tabIndex,
-                  onTap: (i) => setState(() => _tabIndex = i),
-                ),
-                _NavItem(
-                  icon: Icons.favorite_border,
-                  activeIcon: Icons.favorite,
-                  label: 'Favorit',
-                  idx: 3,
-                  cur: _tabIndex,
-                  onTap: (i) => setState(() => _tabIndex = i),
-                ),
-                _NavItem(
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: 'Profil',
-                  idx: 4,
-                  cur: _tabIndex,
-                  onTap: (i) => setState(() => _tabIndex = i),
-                ),
-              ],
-            ),
+              ),
+              _NavItem(
+                icon: Icons.receipt_long_outlined,
+                activeIcon: Icons.receipt_long,
+                label: 'Riwayat',
+                idx: 3,
+                cur: current,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Profile',
+                idx: 4,
+                cur: current,
+                onTap: onTap,
+              ),
+            ],
           ),
         ),
       ),
@@ -200,6 +262,13 @@ class _HomeTabState extends State<_HomeTab> {
     }
   }
 
+  Future<void> _goToFavorit() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FavoritScreen()),
+    );
+  }
+
   void _search() {
     final q = _searchCtrl.text.trim();
     if (q.isEmpty) return;
@@ -212,7 +281,9 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
-    final nama = user?['nama'] as String? ?? 'Pengguna';
+    final alamat = user?['alamat'] as String? ?? 'Surakarta';
+    final kota = _shortKota(alamat);
+
     return Scaffold(
       backgroundColor: _kBg,
       body: RefreshIndicator(
@@ -220,7 +291,7 @@ class _HomeTabState extends State<_HomeTab> {
         onRefresh: _load,
         child: CustomScrollView(
           slivers: [
-            // AppBar
+            // ── AppBar ────────────────────────────────────────────────────
             SliverAppBar(
               pinned: true,
               backgroundColor: Colors.white,
@@ -236,45 +307,84 @@ class _HomeTabState extends State<_HomeTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 13,
-                              color: _kBlue,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _shortAlamat(user?['alamat'] as String?),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Halo, ${nama.split(' ').first}! 👋',
-                          style: const TextStyle(
-                            fontSize: 14,
+                    // Logo
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _kBlue,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'T',
+                          style: TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937),
+                            fontSize: 18,
                           ),
                         ),
-                      ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'tomas',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                        letterSpacing: 0.3,
+                      ),
                     ),
                     const Spacer(),
+                    // Location chip
+                    GestureDetector(
+                      onTap: () {},
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: _kOrange,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            kota,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 16,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    // Heart icon → Favorit
+                    IconButton(
+                      icon: const Icon(
+                        Icons.favorite_border,
+                        color: Color(0xFF374151),
+                        size: 22,
+                      ),
+                      onPressed: _goToFavorit,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    // Bell icon + badge
                     Stack(
                       children: [
                         IconButton(
                           icon: const Icon(
                             Icons.notifications_outlined,
                             color: Color(0xFF374151),
-                            size: 24,
+                            size: 22,
                           ),
                           onPressed: () async {
                             await Navigator.push(
@@ -323,7 +433,7 @@ class _HomeTabState extends State<_HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Search
+                  // ── Search ────────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: Container(
@@ -333,7 +443,7 @@ class _HomeTabState extends State<_HomeTab> {
                         border: Border.all(color: const Color(0xFFE5E7EB)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withOpacity(0.04),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -344,7 +454,7 @@ class _HomeTabState extends State<_HomeTab> {
                         onSubmitted: (_) => _search(),
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: 'Cari jasa yang kamu inginkan...',
+                          hintText: 'Cari jasa yang anda inginkan',
                           hintStyle: const TextStyle(
                             color: Color(0xFF9CA3AF),
                             fontSize: 13,
@@ -353,14 +463,6 @@ class _HomeTabState extends State<_HomeTab> {
                             Icons.search,
                             color: Color(0xFF9CA3AF),
                             size: 20,
-                          ),
-                          suffixIcon: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                              color: _kBlue,
-                              size: 20,
-                            ),
-                            onPressed: _search,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -371,54 +473,124 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   ),
 
-                  // Banner
+                  // ── Banner ────────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: Container(
                         width: double.infinity,
-                        height: 148,
+                        height: 156,
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(0xFF1D4ED8), _kBlueLt],
+                            colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                         ),
                         child: Stack(
                           children: [
+                            // Right illustration — stacked icons
                             Positioned(
-                              right: -10,
-                              top: -10,
-                              child: Icon(
-                                Icons.handyman,
-                                size: 130,
-                                color: Colors.white.withOpacity(0.08),
+                              right: 12,
+                              top: 0,
+                              bottom: 0,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.smartphone,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.10),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.handyman,
+                                      color: Colors.white70,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            // Left content
                             Padding(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.fromLTRB(
+                                18,
+                                14,
+                                90,
+                                14,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            'T',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      const Text(
+                                        'tomas',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
                                   const Text(
-                                    'Tomas',
+                                    'SOLUSI JASA\nTERLENGKAP!',
                                     style: TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 1.5,
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1.15,
+                                      letterSpacing: 0.3,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   const Text(
-                                    'Solusi Jasa\nTerlengkap!',
+                                    'Semua Layanan dalam\nSatu Aplikasi!',
                                     style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.2,
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      height: 1.4,
                                     ),
                                   ),
                                   const Spacer(),
@@ -436,15 +608,16 @@ class _HomeTabState extends State<_HomeTab> {
                                         vertical: 8,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: _kOrange,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: const Text(
-                                        'Pesan Sekarang',
+                                        'PESAN SEKARANG',
                                         style: TextStyle(
-                                          color: _kBlue,
-                                          fontSize: 12,
+                                          color: Colors.white,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                     ),
@@ -458,81 +631,72 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   ),
 
-                  // Kategori
-                  if (_layananList.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
-                      child: Text(
-                        'Kategori Layanan',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                  // ── Kategori (no title) ───────────────────────────────
+                  if (_layananList.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 18),
+                      child: SizedBox(
+                        height: 90,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: _layananList.length,
+                          itemBuilder: (_, i) {
+                            final l = _layananList[i] as Map<String, dynamic>;
+                            final nm = l['nama_layanan'] as String? ?? '';
+                            final cfg = _layananCfg(nm);
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TukangListScreen(layanan: nm),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 54,
+                                      height: 54,
+                                      decoration: BoxDecoration(
+                                        color: cfg.$1,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(
+                                        cfg.$2,
+                                        color: cfg.$3,
+                                        size: 26,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    SizedBox(
+                                      width: 64,
+                                      child: Text(
+                                        nm,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF374151),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: 88,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        itemCount: _layananList.length,
-                        itemBuilder: (_, i) {
-                          final l = _layananList[i] as Map<String, dynamic>;
-                          final nm = l['nama_layanan'] as String? ?? '';
-                          final cfg = _layananCfg(nm);
-                          return GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => TukangListScreen(layanan: nm),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      color: cfg.$1,
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Icon(
-                                      cfg.$2,
-                                      color: cfg.$3,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  SizedBox(
-                                    width: 62,
-                                    child: Text(
-                                      nm,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF374151),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
 
-                  // Tukang sections
+                  // ── Tukang sections ───────────────────────────────────
                   if (_loading)
                     const Center(
                       child: Padding(
@@ -574,52 +738,62 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  String _shortAlamat(String? a) {
+  String _shortKota(String? a) {
     if (a == null || a.isEmpty) return 'Surakarta';
-    final s = a.split(',').first.trim();
-    return s.length > 20 ? '${s.substring(0, 20)}…' : s;
+    // Try to extract city name: last part after comma or first part
+    final parts = a.split(',');
+    final kota = parts.last.trim();
+    return kota.length > 16 ? '${kota.substring(0, 16)}…' : kota;
   }
 }
 
 // ── Layanan icon config ───────────────────────────────────────────────────────
 (Color, IconData, Color) _layananCfg(String n) {
   final s = n.toLowerCase();
-  if (s.contains('ac') || s.contains('servis'))
+  if (s.contains('ac') || s.contains('servis')) {
     return (const Color(0xFFE0F2FE), Icons.ac_unit, const Color(0xFF0284C7));
-  if (s.contains('tukang') || s.contains('bangun'))
+  }
+  if (s.contains('tukang') || s.contains('bangun')) {
     return (const Color(0xFFFFF7ED), Icons.build, const Color(0xFFEA580C));
-  if (s.contains('antar') || s.contains('jemput'))
+  }
+  if (s.contains('antar') || s.contains('jemput')) {
     return (
       const Color(0xFFF0FDF4),
       Icons.two_wheeler,
       const Color(0xFF16A34A),
     );
-  if (s.contains('foto'))
+  }
+  if (s.contains('foto')) {
     return (
       const Color(0xFFF5F3FF),
       Icons.photo_camera,
       const Color(0xFF7C3AED),
     );
-  if (s.contains('baby') || s.contains('anak'))
+  }
+  if (s.contains('baby') || s.contains('anak')) {
     return (const Color(0xFFFFF1F2), Icons.child_care, const Color(0xFFE11D48));
-  if (s.contains('listrik'))
+  }
+  if (s.contains('listrik')) {
     return (
       const Color(0xFFFEFCE8),
       Icons.electrical_services,
       const Color(0xFFCA8A04),
     );
-  if (s.contains('bersih') || s.contains('cuci'))
+  }
+  if (s.contains('bersih') || s.contains('cuci')) {
     return (
       const Color(0xFFF0FDFA),
       Icons.cleaning_services,
       const Color(0xFF0D9488),
     );
-  if (s.contains('cat'))
+  }
+  if (s.contains('cat')) {
     return (
       const Color(0xFFFFF1F2),
       Icons.format_paint,
       const Color(0xFFE11D48),
     );
+  }
   return (
     const Color(0xFFF8FAFC),
     Icons.home_repair_service,
@@ -731,7 +905,7 @@ class _TukangCard extends StatelessWidget {
                       height: 108,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _ph(),
+                      errorBuilder: (_, _, _) => _ph(),
                     )
                   : _ph(),
             ),
@@ -1025,7 +1199,7 @@ class _TukangListItem extends StatelessWidget {
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _ph(),
+                      errorBuilder: (_, _, _) => _ph(),
                     )
                   : _ph(),
             ),

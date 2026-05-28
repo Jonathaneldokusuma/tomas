@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Review;
 use App\Models\Chat;
 use App\Models\Notifikasi;
+use App\Models\BroadcastMessage;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -343,6 +344,79 @@ class AdminController extends Controller
         return back()->with('success', 'Order berhasil dihapus.');
     }
 
+    // ─── Tukang Verifikasi ────────────────────────────────────────────────────
+
+    public function verifikasiTukang(Request $request)
+    {
+        $tukang = Tukang::where('status_verifikasi', 'pending')->orderByDesc('id_tukang')->paginate(20);
+        return view('admin.tukang.verifikasi', compact('tukang'));
+    }
+
+    public function approveTukang($id)
+    {
+        $tukang = Tukang::findOrFail($id);
+        $tukang->update(['status_verifikasi' => 'verified', 'status_aktif' => 1]);
+        return back()->with('success', "Tukang {$tukang->nama} berhasil diverifikasi.");
+    }
+
+    public function rejectTukang($id)
+    {
+        $tukang = Tukang::findOrFail($id);
+        $tukang->update(['status_verifikasi' => 'rejected']);
+        return back()->with('success', "Tukang {$tukang->nama} ditolak.");
+    }
+
+    public function banTukang($id)
+    {
+        $tukang = Tukang::findOrFail($id);
+        $tukang->update(['status_aktif' => 0]);
+        return back()->with('success', "Tukang {$tukang->nama} dinonaktifkan.");
+    }
+
+    public function unbanTukang($id)
+    {
+        $tukang = Tukang::findOrFail($id);
+        $tukang->update(['status_aktif' => 1]);
+        return back()->with('success', "Tukang {$tukang->nama} diaktifkan kembali.");
+    }
+
+    // ─── User Ban ─────────────────────────────────────────────────────────────
+
+    public function banUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->update(['is_banned' => 1]);
+        return back()->with('success', "User {$user->nama} dinonaktifkan.");
+    }
+
+    public function unbanUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->update(['is_banned' => 0]);
+        return back()->with('success', "User {$user->nama} diaktifkan kembali.");
+    }
+
+    // ─── Monitoring Pembayaran ────────────────────────────────────────────────
+
+    public function pembayaran(Request $request)
+    {
+        $status = $request->query('status', 'all');
+        $orders = Order::with(['user', 'tukang'])
+            ->where('metode_bayar', '!=', 'Tunai')
+            ->when($status !== 'all', fn($q) => $q->where('status_payment', $status))
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return view('admin.pembayaran', compact('orders', 'status'));
+    }
+
+    public function konfirmasiPembayaran($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->update(['status_payment' => 'confirmed', 'status' => 'done']);
+        return back()->with('success', 'Pembayaran dikonfirmasi.');
+    }
+
     // ─── Reviews ─────────────────────────────────────────────────────────────
 
     public function reviews(Request $request)
@@ -358,5 +432,30 @@ class AdminController extends Controller
     {
         Review::findOrFail($id)->delete();
         return back()->with('success', 'Review berhasil dihapus.');
+    }
+
+    // ─── Broadcast (Pesan ke Tukang) ─────────────────────────────────────────
+
+    public function broadcast(Request $request)
+    {
+        $broadcasts = BroadcastMessage::orderByDesc('created_at')->paginate(20);
+        return view('admin.broadcast.index', compact('broadcasts'));
+    }
+
+    public function storeBroadcast(Request $request)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:200',
+            'isi'   => 'required|string',
+            'tipe'  => 'required|in:info,warning,promo',
+        ]);
+        BroadcastMessage::create($request->only('judul', 'isi', 'tipe'));
+        return back()->with('success', 'Pesan berhasil dikirim ke semua tukang.');
+    }
+
+    public function deleteBroadcast($id)
+    {
+        BroadcastMessage::findOrFail($id)->delete();
+        return back()->with('success', 'Pesan dihapus.');
     }
 }

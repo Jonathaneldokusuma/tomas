@@ -131,12 +131,12 @@ class ApiService {
       body: jsonEncode({
         'id_tukang': idTukang,
         'id_layanan': idLayanan,
-        if (alamat != null) 'alamat': alamat,
-        if (tanggalKerja != null) 'tanggal_kerja': tanggalKerja,
-        if (jamMulai != null) 'jam_mulai': jamMulai,
-        if (durasi != null) 'durasi': durasi,
-        if (deskripsi != null) 'deskripsi': deskripsi,
-        if (metodeBayar != null) 'metode_bayar': metodeBayar,
+        'alamat': ?alamat,
+        'tanggal_kerja': ?tanggalKerja,
+        'jam_mulai': ?jamMulai,
+        'durasi': ?durasi,
+        'deskripsi': ?deskripsi,
+        'metode_bayar': ?metodeBayar,
       }),
     );
     return _parse(res);
