@@ -37,7 +37,6 @@ RUN composer dump-autoload --optimize --no-dev --no-interaction \
 WORKDIR /app
 
 COPY start.sh /app/start.sh
-COPY Procfile /app/Procfile
 
 RUN chmod +x /app/start.sh /app/tomas-app/start.sh
 
