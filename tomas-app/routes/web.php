@@ -9,8 +9,8 @@ use App\Http\Controllers\FavoritController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Admin\AdminController;
 
-// Redirect root ke login
-Route::get('/', fn() => redirect()->route('login'));
+// Redirect root ke admin login
+Route::get('/', fn() => redirect()->route('admin.login'));
 
 // Auth
 Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
