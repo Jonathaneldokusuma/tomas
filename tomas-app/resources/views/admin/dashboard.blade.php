@@ -23,6 +23,16 @@
     </span>
 </div>
 
+@if(!empty($dashboardError))
+<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:14px;padding:14px 16px;margin-bottom:20px;color:#9a3412;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:10px">
+    <i class="fas fa-triangle-exclamation" style="font-size:16px;margin-top:1px"></i>
+    <div>
+        <div style="font-weight:700;margin-bottom:3px">Database belum siap</div>
+        <div>{{ $dashboardError }}</div>
+    </div>
+</div>
+@endif
+
 {{-- ═══ Filter Bar ════════════════════════════════════════════════════════════ --}}
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 20px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
 
