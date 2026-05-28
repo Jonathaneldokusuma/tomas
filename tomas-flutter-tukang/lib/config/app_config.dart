@@ -10,7 +10,6 @@ class AppConfig {
     defaultValue: _defaultServerUrl,
   );
 
-  /// Full API base URL (digunakan oleh ApiService)
   static final String apiBaseUrl = '${_normalizedServerUrl(serverUrl)}/api';
 
   static String _normalizedServerUrl(String value) {

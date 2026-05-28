@@ -79,21 +79,30 @@ Setelah Railway berhasil deploy dan memberikan URL (contoh: `https://tomas-abc12
    APP_URL=https://tomas-abc123.up.railway.app
    ```
 
----
+Admin panel web akan tersedia di:
 
-## Langkah 6 — Update URL di Flutter
-
-Buka file `tomas-flutter/lib/config/app_config.dart` dan ganti `serverUrl`:
-
-```dart
-static const String serverUrl = 'https://tomas-abc123.up.railway.app';
+```text
+https://tomas-abc123.up.railway.app/admin
 ```
 
-Lalu build ulang Flutter app:
+---
+
+## Langkah 6 — Build APK dengan URL Backend Production
+
+Kedua aplikasi Flutter sekarang membaca URL backend dari `--dart-define`, jadi tidak perlu edit source code setiap kali deploy.
+
+Build APK user:
 
 ```bash
 cd "d:\laravel web app\tomas-flutter"
-flutter build apk --release
+flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://tomas-abc123.up.railway.app
+```
+
+Build APK tukang:
+
+```bash
+cd "d:\laravel web app\tomas-flutter-tukang"
+flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://tomas-abc123.up.railway.app
 ```
 
 ---
@@ -102,7 +111,7 @@ flutter build apk --release
 
 Buka browser, akses:
 - `https://tomas-abc123.up.railway.app/api/tukang` → harus return JSON
-- `https://tomas-abc123.up.railway.app/admin` → admin panel
+- `https://tomas-abc123.up.railway.app/admin` → admin login panel
 
 ---
 
@@ -114,17 +123,16 @@ Buka browser, akses:
 | Database error | Pastikan MySQL plugin sudah ditambahkan di Railway |
 | APP_KEY error | Tambahkan variabel `APP_KEY` di Railway Variables |
 | 500 error | Set `APP_DEBUG=true` sementara untuk lihat pesan error |
-| Flutter tidak konek | Pastikan `app_config.dart` sudah diupdate ke URL Railway |
+| Flutter tidak konek | Pastikan saat build APK kamu memakai `--dart-define=TOMAS_SERVER_URL=...` |
 
 ---
 
 ## Mode Lokal (dengan XAMPP)
 
-Untuk testing di lokal, edit `tomas-flutter/lib/config/app_config.dart`:
+Untuk testing lokal, jalankan app dengan `--dart-define` ke server lokal:
 
-```dart
-// Lokal — IP PC kamu
-static const String serverUrl = 'http://192.168.x.x:8000';
+```bash
+flutter run --dart-define=TOMAS_SERVER_URL=http://192.168.x.x:8000
 ```
 
 ---

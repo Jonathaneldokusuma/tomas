@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 
 class ApiService {
-  static const String baseUrl = AppConfig.apiBaseUrl;
+  static final String baseUrl = AppConfig.apiBaseUrl;
 
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -119,6 +119,8 @@ class ApiService {
     int idTukang,
     int idLayanan, {
     String? alamat,
+    double? latitude,
+    double? longitude,
     String? tanggalKerja,
     String? jamMulai,
     String? durasi,
@@ -131,12 +133,16 @@ class ApiService {
       body: jsonEncode({
         'id_tukang': idTukang,
         'id_layanan': idLayanan,
-        'alamat': ?alamat,
-        'tanggal_kerja': ?tanggalKerja,
-        'jam_mulai': ?jamMulai,
-        'durasi': ?durasi,
-        'deskripsi': ?deskripsi,
-        'metode_bayar': ?metodeBayar,
+        if (alamat != null && alamat.isNotEmpty) 'alamat': alamat,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (tanggalKerja != null && tanggalKerja.isNotEmpty)
+          'tanggal_kerja': tanggalKerja,
+        if (jamMulai != null && jamMulai.isNotEmpty) 'jam_mulai': jamMulai,
+        if (durasi != null && durasi.isNotEmpty) 'durasi': durasi,
+        if (deskripsi != null && deskripsi.isNotEmpty) 'deskripsi': deskripsi,
+        if (metodeBayar != null && metodeBayar.isNotEmpty)
+          'metode_bayar': metodeBayar,
       }),
     );
     return _parse(res);

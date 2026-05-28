@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 
 const _kBlue = Color(0xFF2563EB);
 const _kBg = Color(0xFFF2F2F7);
@@ -26,8 +27,11 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
     );
     if (picked != null) {
       setState(() {
-        if (isKtp) _ktpImage = File(picked.path);
-        else _selfieImage = File(picked.path);
+        if (isKtp) {
+          _ktpImage = File(picked.path);
+        } else {
+          _selfieImage = File(picked.path);
+        }
       });
     }
   }
@@ -52,7 +56,10 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('tukang_token') ?? '';
-      final req = http.MultipartRequest('POST', Uri.parse('http://10.50.15.205:8000/api/tukang/upload-ktp'));
+      final req = http.MultipartRequest(
+        'POST',
+        Uri.parse('${AppConfig.apiBaseUrl}/tukang/upload-ktp'),
+      );
       req.headers['X-Tukang-Token'] = token;
       req.files.add(await http.MultipartFile.fromPath('foto_ktp', _ktpImage!.path));
       req.files.add(await http.MultipartFile.fromPath('foto_selfie', _selfieImage!.path));
@@ -132,7 +139,7 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
         decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(16),
           border: Border.all(color: image != null ? _kBlue : const Color(0xFFE5E7EB), width: image != null ? 2 : 1),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: image == null
             ? Padding(

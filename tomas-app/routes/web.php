@@ -54,6 +54,8 @@ Route::get('/notifikasi',        [NotifikasiController::class, 'index'])->name('
 Route::get('/notifikasi/unread', [NotifikasiController::class, 'unread'])->name('notifikasi.unread');
 
 // ── Admin ──────────────────────────────────────────────────
+Route::get('/admin', fn() => redirect()->route('admin.login'));
+
 // Auth (no middleware)
 Route::get('/admin/login',  [AdminController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AdminController::class, 'login'])->name('admin.login.post');

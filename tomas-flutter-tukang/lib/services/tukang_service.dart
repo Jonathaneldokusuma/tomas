@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 
 class TukangService {
-  static const String baseUrl = 'http://10.50.15.205:8000/api';
+  static final String baseUrl = AppConfig.apiBaseUrl;
 
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -12,11 +13,14 @@ class TukangService {
 
   static Future<Map<String, String>> _headers() async {
     final token = await getToken();
-    return {
+    final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      if (token != null) 'X-Tukang-Token': token,
     };
+    if (token != null) {
+      headers['X-Tukang-Token'] = token;
+    }
+    return headers;
   }
 
   static Future<Map<String, dynamic>> register({
@@ -29,16 +33,24 @@ class TukangService {
     double? latitude,
     double? longitude,
   }) async {
-    final body = {
+    final body = <String, dynamic>{
       'nama': nama,
       'username': username,
       'no_hp': noHp,
       'password': password,
-      if (noKtp != null && noKtp.isNotEmpty) 'no_ktp': noKtp,
-      if (alamat != null && alamat.isNotEmpty) 'alamat': alamat,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
     };
+    if (noKtp != null && noKtp.isNotEmpty) {
+      body['no_ktp'] = noKtp;
+    }
+    if (alamat != null && alamat.isNotEmpty) {
+      body['alamat'] = alamat;
+    }
+    if (latitude != null) {
+      body['latitude'] = latitude;
+    }
+    if (longitude != null) {
+      body['longitude'] = longitude;
+    }
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/register'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},

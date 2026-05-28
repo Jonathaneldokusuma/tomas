@@ -1,17 +1,23 @@
-# tomas_flutter_tukang
+# Tomas Flutter Tukang
 
-A new Flutter project.
+## Build APK Production
 
-## Getting Started
+App ini membaca URL backend dari `--dart-define`, jadi build production harus menyertakan domain backend Laravel kamu.
 
-This project is a starting point for a Flutter application.
+Contoh:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+cd "d:\laravel web app\tomas-flutter-tukang"
+flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://backend-kamu.com
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Build Lokal
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter run --dart-define=TOMAS_SERVER_URL=http://127.0.0.1:8000
+```
+
+## Catatan
+
+- Backend API tetap berasal dari project Laravel `tomas-app`
+- Admin panel web ada di `https://backend-kamu.com/admin`
