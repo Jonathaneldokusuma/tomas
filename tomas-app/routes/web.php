@@ -35,7 +35,7 @@ Route::get('/tukang',      [WebController::class, 'tukangIndex'])->name('tukang.
 Route::get('/tukang/{id}', [WebController::class, 'tukangShow'])->name('tukang.show');
 
 // Layanan
-Route::get('/layanan/{id}', [WebController::class, 'layananShow'])->name('layanan.show');
+Route::get('/layanan/{id}', [WebController::class, 'layananShow'])->name('web.layanan.show');
 
 // Order
 Route::post('/orders',                    [WebController::class, 'orderStore'])->name('orders.store');

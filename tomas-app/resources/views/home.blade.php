@@ -101,7 +101,7 @@
         <div class="flex items-start justify-between gap-1 overflow-x-auto scrollbar-hide pb-1">
             @foreach($layanan->take(5) as $item)
             @php $ic = getIcon($item->nama_layanan, $iconMap); @endphp
-            <a href="{{ route('layanan.show', $item->id_layanan) }}"
+            <a href="{{ route('web.layanan.show', $item->id_layanan) }}"
                 class="category-card flex flex-col items-center gap-1.5 flex-none w-16">
                 <div class="w-14 h-14 {{ $ic['bg'] }} rounded-2xl flex items-center justify-center shadow-sm">
                     <i class="{{ $ic['icon'] }} {{ $ic['color'] }} text-2xl"></i>
@@ -125,7 +125,7 @@
     <div class="mb-5">
         <div class="flex items-center justify-between px-4 mb-3">
             <h2 class="font-bold text-lg" style="color:#1A2B47">{{ $layananItem->nama_layanan }}</h2>
-            <a href="{{ route('layanan.show', $layananItem->id_layanan) }}"
+            <a href="{{ route('web.layanan.show', $layananItem->id_layanan) }}"
                 class="text-primary text-xs font-semibold">Lihat Semua</a>
         </div>
         <div class="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide">
