@@ -5,12 +5,19 @@ echo "==> [start.sh] Preparing Laravel for production..."
 
 # ── Generate app key if missing ────────────────────────────────────────────
 if [ -z "$APP_KEY" ]; then
-    php artisan key:generate --force
+    if [ -f .env ]; then
+        php artisan key:generate --force
+    else
+        export APP_KEY=$(php artisan key:generate --show --no-interaction)
+        echo "==> APP_KEY generated from runtime environment"
+    fi
 fi
 
 # ── Run database migrations ────────────────────────────────────────────────
 echo "==> Running migrations..."
-php artisan migrate --force
+if ! php artisan migrate --force; then
+    echo "==> Migration step failed, continuing startup so the app can respond"
+fi
 
 # ── Optimize for production ────────────────────────────────────────────────
 echo "==> Caching config & routes..."
@@ -20,7 +27,7 @@ php artisan view:cache
 
 # ── Create storage symlink ─────────────────────────────────────────────────
 if [ ! -L public/storage ]; then
-    php artisan storage:link
+    php artisan storage:link || true
 fi
 
 # ── Start server ───────────────────────────────────────────────────────────
