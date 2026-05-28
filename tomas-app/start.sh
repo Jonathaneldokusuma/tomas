@@ -3,6 +3,9 @@ set -e
 
 echo "==> [start.sh] Preparing Laravel for production..."
 
+# ── Ensure runtime directories exist ───────────────────────────────────────
+mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions storage/logs bootstrap/cache
+
 # ── Generate app key if missing ────────────────────────────────────────────
 if [ -z "$APP_KEY" ]; then
     if [ -f .env ]; then
