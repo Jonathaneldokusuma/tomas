@@ -1227,25 +1227,25 @@
 ═══════════════════════════════════════════════════════ -->
 <script type="module">
 // ── FIREBASE ────────────────────────────────────────────
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js';
+import { initializeApp }       from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js';
 import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
          query, orderBy, where, getDoc, serverTimestamp, onSnapshot }
-  from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js';
+                                from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js';
 import { getStorage, ref, getDownloadURL }
-  from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js';
+                                from 'https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js';
 
-// 🔥 KONFIGURASI FIREBASE (PROJECT: tomas-app-2e185)
+// 🔥 KONFIGURASI FIREBASE (DISET KE tomas-app-2e185)
 const firebaseConfig = {
-  apiKey: "AIzaSyA-dbXCTEQrswZg4sdWXSdkHhEMwzybYjc",
-  authDomain: "tomas-app-2e185.firebaseapp.com",
-  projectId: "tomas-app-2e185",
-  storageBucket: "tomas-app-2e185.firebasestorage.app",
+  apiKey:            "AIzaSyA-dbXCTEQrswZg4sdWXSdkHhEMwzybYjc",
+  authDomain:        "tomas-app-2e185.firebaseapp.com",
+  projectId:         "tomas-app-2e185",
+  storageBucket:     "tomas-app-2e185.firebasestorage.app",
   messagingSenderId: "1042170533722",
-  appId: "1:1042170533722:web:d5f269a2180175757c4563"
+  appId:             "1:1042170533722:web:3b32d6ca788bc4e67c4563"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app     = initializeApp(firebaseConfig);
+const db      = getFirestore(app);
 const storage = getStorage(app);
 
 // ── STATE ───────────────────────────────────────────────
