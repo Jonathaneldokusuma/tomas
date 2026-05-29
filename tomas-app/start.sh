@@ -16,11 +16,22 @@ if [ -z "$APP_KEY" ]; then
     fi
 fi
 
-# ── Run database migrations ────────────────────────────────────────────────
+# ── Run database migrations (retry until DB is ready) ────────────────────────
 echo "==> Running migrations..."
-if ! php artisan migrate --force; then
-    echo "==> Migration step failed, continuing startup so the app can respond"
-fi
+# Retry loop: try migrate up to MAX_RETRIES times with a sleep between attempts
+MAX_RETRIES=12
+SLEEP_SECONDS=5
+attempt=1
+until php artisan migrate --force
+do
+    if [ "$attempt" -ge "$MAX_RETRIES" ]; then
+        echo "==> Migration step failed after $attempt attempts, continuing startup"
+        break
+    fi
+    echo "==> Migration attempt $attempt failed, retrying in $SLEEP_SECONDS seconds..."
+    attempt=$((attempt+1))
+    sleep $SLEEP_SECONDS
+done
 
 # ── Optimize for production ────────────────────────────────────────────────
 echo "==> Caching config & routes..."
