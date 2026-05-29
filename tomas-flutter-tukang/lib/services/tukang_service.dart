@@ -53,7 +53,10 @@ class TukangService {
     }
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/register'),
-      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: jsonEncode(body),
     );
     return jsonDecode(res.body) as Map<String, dynamic>;
@@ -65,7 +68,10 @@ class TukangService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/login'),
-      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: jsonEncode({'username': username, 'password': password}),
     );
     final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -101,7 +107,10 @@ class TukangService {
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
-  static Future<Map<String, dynamic>> rejectOrder(int id, {String catatan = ''}) async {
+  static Future<Map<String, dynamic>> rejectOrder(
+    int id, {
+    String catatan = '',
+  }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/orders/$id/reject'),
       headers: await _headers(),
@@ -110,7 +119,10 @@ class TukangService {
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
-  static Future<Map<String, dynamic>> updateStatus(int id, String status) async {
+  static Future<Map<String, dynamic>> updateStatus(
+    int id,
+    String status,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/orders/$id/status'),
       headers: await _headers(),
@@ -135,7 +147,9 @@ class TukangService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  static Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> updateProfile(
+    Map<String, dynamic> data,
+  ) async {
     final res = await http.put(
       Uri.parse('$baseUrl/tukang/profile'),
       headers: await _headers(),
@@ -163,7 +177,10 @@ class TukangService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  static Future<Map<String, dynamic>> sendChatMessage(int idUser, String pesan) async {
+  static Future<Map<String, dynamic>> sendChatMessage(
+    int idUser,
+    String pesan,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tukang/chat/$idUser'),
       headers: await _headers(),
