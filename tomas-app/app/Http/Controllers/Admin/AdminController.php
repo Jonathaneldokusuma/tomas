@@ -106,35 +106,44 @@ class AdminController extends Controller
         $chartLabels = [];
         $chartData = [];
 
-        try {
-            // ── Base queries ──────────────────────────────────────────────────────
-            $ordersQ = Order::query()
-                ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
-                ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId));
+        $safe = function (callable $fn, $default = null) use (&$dashboardError) {
+            try {
+                return $fn();
+            } catch (QueryException $ex) {
+                \Log::error('Dashboard DB error', ['message' => $ex->getMessage()]);
+                $dashboardError = 'Database belum siap atau migrasi belum berhasil. Login admin sudah aktif, tetapi data dashboard belum bisa dimuat.';
+                return $default;
+            }
+        };
 
-            $reviewsQ = Review::query()
-                ->when($from || $tukangId, fn($q) =>
-                    $q->whereHas('order', fn($oq) =>
-                        $oq->when($from,     fn($x) => $x->where('created_at', '>=', $from))
-                           ->when($tukangId, fn($x) => $x->where('id_tukang',  $tukangId))
-                    )
-                );
+        // build base queries (these are lightweight and only create query builders)
+        $ordersQ = Order::query()
+            ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
+            ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId));
 
-            // ── Stats ─────────────────────────────────────────────────────────────
-            $stats = [
-                'users'        => User::count(),
-                'tukang'       => Tukang::count(),
-                'tukang_aktif' => Tukang::where('status_aktif', 1)->count(),
-                'orders'       => $ordersQ->count(),
-                'reviews'      => $reviewsQ->count(),
-                'orders_total' => Order::count(),
-                'avg_rating'   => round((float) $reviewsQ->avg('rating'), 1),
-            ];
+        $reviewsQ = Review::query()
+            ->when($from || $tukangId, fn($q) =>
+                $q->whereHas('order', fn($oq) =>
+                    $oq->when($from,     fn($x) => $x->where('created_at', '>=', $from))
+                       ->when($tukangId, fn($x) => $x->where('id_tukang',  $tukangId))
+                )
+            );
 
-            $tukangList = Tukang::orderBy('nama')->get(['id_tukang', 'nama']);
+        // Stats
+        $stats = [
+            'users'        => $safe(fn() => User::count(), 0),
+            'tukang'       => $safe(fn() => Tukang::count(), 0),
+            'tukang_aktif' => $safe(fn() => Tukang::where('status_aktif', 1)->count(), 0),
+            'orders'       => $safe(fn() => $ordersQ->count(), 0),
+            'reviews'      => $safe(fn() => $reviewsQ->count(), 0),
+            'orders_total' => $safe(fn() => Order::count(), 0),
+            'avg_rating'   => $safe(fn() => round((float) $reviewsQ->avg('rating'), 1), 0),
+        ];
 
-            // ── Tukang Performance ────────────────────────────────────────────────
-            $tukangPerformance = Tukang::with(['orders' => function ($q) use ($from, $tukangId) {
+        $tukangList = $safe(fn() => Tukang::orderBy('nama')->get(['id_tukang', 'nama']), collect());
+
+        // Tukang Performance (safe-wrapped)
+        $tukangPerformance = $safe(fn() => Tukang::with(['orders' => function ($q) use ($from, $tukangId) {
                     if ($from)     $q->where('created_at', '>=', $from);
                     if ($tukangId) $q->where('id_tukang',  $tukangId);
                     $q->with('review');
@@ -157,56 +166,51 @@ class AdminController extends Controller
                     ];
                 })
                 ->sortByDesc('orders_count')
-                ->values();
+                ->values(), collect());
 
-            $topWorkers = $tukangPerformance->take(10);
+        $topWorkers = $safe(fn() => $tukangPerformance->take(10), collect());
 
-            $topRated = $tukangPerformance
-                ->filter(fn($t) => $t['reviews_count'] > 0)
-                ->sortByDesc('avg_rating')
-                ->take(5)
-                ->values();
+        $topRated = $safe(fn() => $tukangPerformance
+            ->filter(fn($t) => $t['reviews_count'] > 0)
+            ->sortByDesc('avg_rating')
+            ->take(5)
+            ->values(), collect());
 
-            // ── Top Customers ─────────────────────────────────────────────────────
-            $topCustomers = User::withCount(['orders as orders_count' => function ($q) use ($from, $tukangId) {
-                    if ($from)     $q->where('created_at', '>=', $from);
-                    if ($tukangId) $q->where('id_tukang',  $tukangId);
-                }])
-                ->orderByDesc('orders_count')
-                ->limit(10)
-                ->get();
+        // Top Customers
+        $topCustomers = $safe(fn() => User::withCount(['orders as orders_count' => function ($q) use ($from, $tukangId) {
+                if ($from)     $q->where('created_at', '>=', $from);
+                if ($tukangId) $q->where('id_tukang',  $tukangId);
+            }])
+            ->orderByDesc('orders_count')
+            ->limit(10)
+            ->get(), collect());
 
-            // ── Chart ─────────────────────────────────────────────────────────────
-            if ($period === 'today') {
-                for ($h = 0; $h < 24; $h += 2) {
-                    $chartLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
-                    $start = now()->startOfDay()->addHours($h);
-                    $end   = $start->copy()->addHours(2);
-                    $q     = Order::whereBetween('created_at', [$start, $end]);
-                    if ($tukangId) $q->where('id_tukang', $tukangId);
-                    $chartData[] = $q->count();
-                }
-            } else {
-                $chartDays = $period === 'week' ? 7 : ($period === 'month' ? 30 : 14);
-                for ($i = $chartDays - 1; $i >= 0; $i--) {
-                    $day           = now()->subDays($i);
-                    $chartLabels[] = $day->format('d/m');
-                    $q = Order::whereDate('created_at', $day->toDateString());
-                    if ($tukangId) $q->where('id_tukang', $tukangId);
-                    $chartData[] = $q->count();
-                }
+        // Chart
+        if ($period === 'today') {
+            for ($h = 0; $h < 24; $h += 2) {
+                $chartLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+                $start = now()->startOfDay()->addHours($h);
+                $end   = $start->copy()->addHours(2);
+                $chartData[] = $safe(fn() => Order::whereBetween('created_at', [$start, $end])
+                    ->when($tukangId, fn($q) => $q->where('id_tukang', $tukangId))->count(), 0);
             }
-
-            // ── Recent Orders ─────────────────────────────────────────────────────
-            $recentOrders = Order::with(['user', 'tukang', 'layanan', 'review'])
-                ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
-                ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId))
-                ->orderByDesc('id_order')
-                ->limit(10)
-                ->get();
-        } catch (QueryException $exception) {
-            $dashboardError = 'Database belum siap atau migrasi belum berhasil. Login admin sudah aktif, tetapi data dashboard belum bisa dimuat.';
+        } else {
+            $chartDays = $period === 'week' ? 7 : ($period === 'month' ? 30 : 14);
+            for ($i = $chartDays - 1; $i >= 0; $i--) {
+                $day           = now()->subDays($i);
+                $chartLabels[] = $day->format('d/m');
+                $chartData[] = $safe(fn() => Order::whereDate('created_at', $day->toDateString())
+                    ->when($tukangId, fn($q) => $q->where('id_tukang', $tukangId))->count(), 0);
+            }
         }
+
+        // Recent Orders
+        $recentOrders = $safe(fn() => Order::with(['user', 'tukang', 'layanan', 'review'])
+            ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
+            ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId))
+            ->orderByDesc('id_order')
+            ->limit(10)
+            ->get(), collect());
 
         return view('admin.dashboard', compact(
             'stats', 'recentOrders', 'tukangPerformance',

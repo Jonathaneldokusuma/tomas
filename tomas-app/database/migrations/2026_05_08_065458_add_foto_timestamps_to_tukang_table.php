@@ -15,7 +15,11 @@ class AddFotoTimestampsToTukangTable extends Migration
     {
         Schema::table('tukang', function (Blueprint $table) {
             if (! Schema::hasColumn('tukang', 'foto')) {
-                $table->string('foto')->nullable()->after('bio');
+                if (Schema::hasColumn('tukang', 'bio')) {
+                    $table->string('foto')->nullable()->after('bio');
+                } else {
+                    $table->string('foto')->nullable();
+                }
             }
             if (! Schema::hasColumn('tukang', 'created_at')) {
                 $table->timestamps();
@@ -26,7 +30,19 @@ class AddFotoTimestampsToTukangTable extends Migration
     public function down()
     {
         Schema::table('tukang', function (Blueprint $table) {
-            $table->dropColumn(['foto', 'created_at', 'updated_at']);
+            if (Schema::hasColumn('tukang', 'foto')) {
+                $table->dropColumn('foto');
+            }
+            $cols = [];
+            if (Schema::hasColumn('tukang', 'created_at')) {
+                $cols[] = 'created_at';
+            }
+            if (Schema::hasColumn('tukang', 'updated_at')) {
+                $cols[] = 'updated_at';
+            }
+            if (! empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
     }
 }
