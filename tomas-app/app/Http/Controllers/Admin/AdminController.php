@@ -13,6 +13,7 @@ use App\Models\Notifikasi;
 use App\Models\BroadcastMessage;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -31,10 +32,23 @@ class AdminController extends Controller
             'password' => 'required|string',
         ]);
 
-        $adminUser = config('app.admin_user', 'admin');
-        $adminPass = config('app.admin_pass', 'admin123');
+        // normalize/trim inputs and configured credentials to avoid accidental whitespace mismatches
+        $adminUser = trim((string) config('app.admin_user', 'admin'));
+        $adminPass = trim((string) config('app.admin_pass', 'admin123'));
+        $givenUser = trim((string) $request->username);
+        $givenPass = trim((string) $request->password);
 
-        if ($request->username === $adminUser && $request->password === $adminPass) {
+        $ok = (hash_equals($adminUser, $givenUser) && hash_equals($adminPass, $givenPass));
+
+        Log::info('Admin login attempt', [
+            'username' => $givenUser,
+            'success'  => $ok,
+            'ip'       => $request->ip(),
+        ]);
+
+        if ($ok) {
+            // regenerate session id to prevent fixation and mark user as admin
+            $request->session()->regenerate();
             session(['is_admin' => true, 'admin_username' => $adminUser]);
             return redirect()->route('admin.dashboard');
         }
