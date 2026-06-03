@@ -9,7 +9,9 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!session('is_admin')) {
+        $token = $request->cookie('admin_token');
+        $expected = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
+        if (!$token || !hash_equals($expected, $token)) {
             return redirect()->route('admin.login')->with('error', 'Silakan login terlebih dahulu.');
         }
         return $next($request);

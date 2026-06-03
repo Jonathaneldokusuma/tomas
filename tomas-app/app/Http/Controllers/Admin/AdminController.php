@@ -19,9 +19,17 @@ class AdminController extends Controller
 {
     // ─── Auth ────────────────────────────────────────────────────────────────
 
-    public function showLogin()
+    private function isAdminAuthed(Request $request): bool
     {
-        if (session('is_admin')) return redirect()->route('admin.dashboard');
+        $token = $request->cookie('admin_token');
+        if (!$token) return false;
+        $expected = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
+        return hash_equals($expected, $token);
+    }
+
+    public function showLogin(Request $request)
+    {
+        if ($this->isAdminAuthed($request)) return redirect()->route('admin.dashboard');
         return view('admin.login');
     }
 
@@ -32,7 +40,6 @@ class AdminController extends Controller
             'password' => 'required|string',
         ]);
 
-        // normalize/trim inputs and configured credentials to avoid accidental whitespace mismatches
         $adminUser = trim((string) config('app.admin_user', 'admin'));
         $adminPass = trim((string) config('app.admin_pass', 'admin123'));
         $givenUser = trim((string) $request->username);
@@ -47,19 +54,19 @@ class AdminController extends Controller
         ]);
 
         if ($ok) {
-            // regenerate session id to prevent fixation and mark user as admin
-            $request->session()->regenerate();
-            session(['is_admin' => true, 'admin_username' => $adminUser]);
-            return redirect()->route('admin.dashboard');
+            $token = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
+            return redirect()->route('admin.dashboard')
+                ->withCookie(cookie()->forever('admin_token', $token));
         }
 
         return back()->with('error', 'Username atau password salah.')->withInput();
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
-        session()->forget(['is_admin', 'admin_username']);
-        return redirect()->route('admin.login')->with('success', 'Berhasil logout.');
+        return redirect()->route('admin.login')
+            ->withCookie(\Cookie::forget('admin_token'))
+            ->with('success', 'Berhasil logout.');
     }
 
     // ─── Dashboard ───────────────────────────────────────────────────────────
