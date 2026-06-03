@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/notification_service.dart';
 import '../../models/order.dart';
 import 'review_screen.dart';
 import '../payment/payment_screen.dart';
@@ -14,20 +16,82 @@ class OrderListScreen extends StatefulWidget {
 class _OrderListScreenState extends State<OrderListScreen> {
   List<Order> _orders = [];
   bool _loading = true;
+  Timer? _refreshTimer;
+  final Map<int, String> _prevStatuses = {};
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Auto-refresh every 15 seconds
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _loadSilent(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadSilent() async {
+    try {
+      final data = await ApiService.getOrders();
+      if (!mounted) return;
+      final newOrders = data
+          .map((o) => Order.fromJson(o as Map<String, dynamic>))
+          .toList();
+
+      // Detect status changes and notify
+      for (final order in newOrders) {
+        final prev = _prevStatuses[order.idOrder];
+        if (prev != null && prev != order.status) {
+          final msg = _statusMessage(order.status);
+          if (msg != null) {
+            NotificationService.showLocalNotification(
+              title: 'Update Pesanan',
+              body: msg,
+            );
+          }
+        }
+        _prevStatuses[order.idOrder] = order.status;
+      }
+
+      setState(() {
+        _orders = newOrders;
+      });
+    } catch (_) {}
+  }
+
+  String? _statusMessage(String status) {
+    switch (status) {
+      case 'confirmed':
+        return 'Tukang telah menerima pesanan Anda.';
+      case 'in_progress':
+        return 'Tukang sedang mengerjakan pesanan Anda.';
+      case 'done':
+        return 'Pekerjaan selesai! Berikan ulasan Anda.';
+      case 'rejected':
+        return 'Maaf, pesanan Anda ditolak oleh tukang.';
+      default:
+        return null;
+    }
   }
 
   Future<void> _load() async {
     try {
       final data = await ApiService.getOrders();
+      final orders = data
+          .map((o) => Order.fromJson(o as Map<String, dynamic>))
+          .toList();
+      // Seed the previous statuses so first silent poll doesn't false-alarm
+      for (final o in orders) {
+        _prevStatuses[o.idOrder] = o.status;
+      }
       setState(() {
-        _orders = data
-            .map((o) => Order.fromJson(o as Map<String, dynamic>))
-            .toList();
+        _orders = orders;
         _loading = false;
       });
     } catch (_) {
@@ -257,7 +321,7 @@ class _OrderItemState extends State<_OrderItem> {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
+                            color: const Color(0xFF2563EB),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(

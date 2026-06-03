@@ -4,6 +4,7 @@ class Order {
   final Map<String, dynamic>? layanan;
   final bool hasReview;
   final String pembayaranStatus; // unpaid, pending, paid, failed, expired
+  final String status; // pending, confirmed, in_progress, done, rejected
 
   Order({
     required this.idOrder,
@@ -11,6 +12,7 @@ class Order {
     this.layanan,
     required this.hasReview,
     this.pembayaranStatus = 'unpaid',
+    this.status = 'pending',
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
@@ -20,5 +22,6 @@ class Order {
     hasReview: j['has_review'] == true,
     pembayaranStatus:
         (j['pembayaran'] as Map<String, dynamic>?)?['status'] ?? 'unpaid',
+    status: j['status'] as String? ?? 'pending',
   );
 }

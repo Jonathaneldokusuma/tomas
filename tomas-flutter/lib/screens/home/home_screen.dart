@@ -245,16 +245,18 @@ class _HomeTabState extends State<_HomeTab> {
 
   Future<void> _load() async {
     try {
-      final r = await Future.wait([
-        ApiService.getLayanan(),
-        ApiService.getTukangByLayanan(),
-        ApiService.getUnreadCount(),
-      ]);
+      final layanan = await ApiService.getLayanan();
+      if (!mounted) return;
+      setState(() => _layananList = layanan);
+
+      final byLayanan = await ApiService.getTukangByLayanan();
+      if (!mounted) return;
+      setState(() => _byLayanan = byLayanan);
+
+      final unread = await ApiService.getUnreadCount();
       if (!mounted) return;
       setState(() {
-        _layananList = r[0] as List;
-        _byLayanan = r[1] as List;
-        _unreadCount = r[2] as int;
+        _unreadCount = unread as int;
         _loading = false;
       });
     } catch (_) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -11,6 +12,7 @@ import 'screens/chat/chat_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   runApp(const TomasTukangApp());
 }
 
@@ -40,7 +42,9 @@ class TomasTukangApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         if (settings.name == '/order-detail') {
           final order = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(builder: (_) => OrderDetailScreen(order: order));
+          return MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(order: order),
+          );
         }
         return null;
       },

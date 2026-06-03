@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\PembayaranController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\TukangAuthController;
 use App\Http\Controllers\Api\TukangDashboardController;
+use App\Http\Controllers\Api\FcmTokenController;
 
 // ── Public ──────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
@@ -44,6 +45,9 @@ Route::prefix('tukang')->group(function () {
 
     // Pesan dari pusat (admin broadcast)
     Route::get('/broadcast',         [TukangDashboardController::class, 'broadcast']);
+
+    // FCM token (tukang)
+    Route::post('/fcm-token',         [FcmTokenController::class, 'storeTukang']);
 });
 
 // Wildcard route - harus SETELAH semua specific routes
@@ -77,5 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifikasi/unread-count',        [NotifikasiController::class, 'unreadCount']);
     Route::put('/notifikasi/read-all',            [NotifikasiController::class, 'markAllRead']);
     Route::put('/notifikasi/{id}/read',           [NotifikasiController::class, 'markRead']);
+
+    // FCM token (user)
+    Route::post('/fcm-token',  [FcmTokenController::class, 'storeUser']);
 });
 

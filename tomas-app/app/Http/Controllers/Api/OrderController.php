@@ -7,6 +7,8 @@ use App\Models\Order;
 use App\Models\Pembayaran;
 use App\Models\Tukang;
 use App\Models\Notifikasi;
+use App\Models\FcmToken;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -86,6 +88,16 @@ class OrderController extends Controller
             'Pesanan Anda ke ' . ($tukang->nama ?? 'tukang') . ' berhasil dibuat.',
             'order'
         );
+
+        // Push notification ke tukang
+        if ($tukang) {
+            $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
+            FcmService::sendToMany($tokens,
+                'Pesanan Baru!',
+                'Ada pesanan baru dari ' . ($request->user()->name ?? 'pelanggan') . '.',
+                ['type' => 'new_order', 'id_order' => (string)$order->id_order]
+            );
+        }
 
         return response()->json(['id_order' => $order->id_order, 'message' => 'Order berhasil.'], 201);
     }

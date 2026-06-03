@@ -8,6 +8,8 @@ use App\Models\Tukang;
 use App\Models\Chat;
 use App\Models\User;
 use App\Models\BroadcastMessage;
+use App\Models\FcmToken;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -70,6 +72,14 @@ class TukangDashboardController extends Controller
 
         $order->update(['status' => 'confirmed']);
 
+        // Push notification ke user
+        $tokens = FcmToken::getTokens('user', $order->id_user);
+        FcmService::sendToMany($tokens,
+            'Pesanan Dikonfirmasi',
+            'Tukang ' . $tukang->nama . ' telah menerima pesanan Anda.',
+            ['type' => 'order_confirmed', 'id_order' => (string)$id]
+        );
+
         return response()->json(['message' => 'Order diterima', 'order' => $order]);
     }
 
@@ -90,6 +100,14 @@ class TukangDashboardController extends Controller
             'status' => 'rejected',
             'catatan_tukang' => $request->input('catatan', ''),
         ]);
+
+        // Push notification ke user
+        $tokens = FcmToken::getTokens('user', $order->id_user);
+        FcmService::sendToMany($tokens,
+            'Pesanan Ditolak',
+            'Maaf, tukang tidak dapat menerima pesanan Anda saat ini.',
+            ['type' => 'order_rejected', 'id_order' => (string)$id]
+        );
 
         return response()->json(['message' => 'Order ditolak', 'order' => $order]);
     }
@@ -112,6 +130,14 @@ class TukangDashboardController extends Controller
         if (!$order) return response()->json(['message' => 'Order tidak ditemukan'], 404);
 
         $order->update(['status' => $request->status]);
+
+        // Push notification ke user saat status berubah
+        $statusMsg = $request->status === 'in_progress' ? 'Tukang sedang mengerjakan pesanan Anda.' : 'Tukang telah menyelesaikan pekerjaan.';
+        $statusTitle = $request->status === 'in_progress' ? 'Pekerjaan Dimulai' : 'Pekerjaan Selesai';
+        $tokens = FcmToken::getTokens('user', $order->id_user);
+        FcmService::sendToMany($tokens, $statusTitle, $statusMsg,
+            ['type' => 'order_status', 'status' => $request->status, 'id_order' => (string)$id]
+        );
 
         return response()->json(['message' => 'Status diperbarui', 'order' => $order]);
     }
