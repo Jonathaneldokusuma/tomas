@@ -55,8 +55,10 @@ class AdminController extends Controller
 
         if ($ok) {
             $token = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
+            $isSecure = $request->secure() || $request->header('X-Forwarded-Proto') === 'https';
+            $cookie = cookie('admin_token', $token, 60 * 24 * 365 * 5, '/', null, $isSecure, true, false, 'lax');
             return redirect()->route('admin.dashboard')
-                ->withCookie(cookie()->forever('admin_token', $token));
+                ->withCookie($cookie);
         }
 
         return back()->with('error', 'Username atau password salah.')->withInput();
