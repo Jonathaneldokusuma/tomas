@@ -112,152 +112,151 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      body: _loading
-          ? _buildSkeleton()
-          : _error != null
-          ? _buildError()
-          : NestedScrollView(
-              headerSliverBuilder: (_, __) => [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(child: _buildStatsRow()),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _TabBarDelegate(
-                    TabBar(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildStatsRow(),
+            _buildTabBar(),
+            Expanded(
+              child: _loading
+                  ? _buildSkeleton()
+                  : _error != null
+                  ? _buildError(_error ?? 'Gagal memuat dashboard')
+                  : TabBarView(
                       controller: _tabCtrl,
-                      labelColor: _kBlue,
-                      unselectedLabelColor: const Color(0xFF6B7280),
-                      indicatorColor: _kBlue,
-                      indicatorWeight: 3,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      tabs: [
-                        Tab(text: 'Masuk (${_pending.length})'),
-                        Tab(text: 'Aktif (${_active.length})'),
-                        Tab(text: 'Selesai (${_done.length})'),
+                      children: [
+                        _buildList(
+                          _pending,
+                          emptyMsg: 'Tidak ada pesanan masuk',
+                          emptyIcon: Icons.inbox_outlined,
+                        ),
+                        _buildList(
+                          _active,
+                          emptyMsg: 'Tidak ada pesanan aktif',
+                          emptyIcon: Icons.work_outline,
+                        ),
+                        _buildList(
+                          _done,
+                          emptyMsg: 'Belum ada pesanan selesai',
+                          emptyIcon: Icons.check_circle_outline,
+                        ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-              body: TabBarView(
-                controller: _tabCtrl,
-                children: [
-                  _buildList(
-                    _pending,
-                    emptyMsg: 'Tidak ada pesanan masuk',
-                    emptyIcon: Icons.inbox_outlined,
-                  ),
-                  _buildList(
-                    _active,
-                    emptyMsg: 'Tidak ada pesanan aktif',
-                    emptyIcon: Icons.work_outline,
-                  ),
-                  _buildList(
-                    _done,
-                    emptyMsg: 'Belum ada pesanan selesai',
-                    emptyIcon: Icons.check_circle_outline,
-                  ),
-                ],
-              ),
             ),
-    );
-  }
-
-  // ── Sliver App Bar with Gradient ──────────────────────────────────────────
-  SliverAppBar _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 140,
-      pinned: true,
-      backgroundColor: _kBlue,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_kIndigo, _kBlue2, _kBlue, _kTeal],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -30,
-                right: -20,
-                child: _glowCircle(120, Colors.white.withOpacity(0.07)),
-              ),
-              Positioned(
-                bottom: -40,
-                left: -10,
-                child: _glowCircle(160, Colors.white.withOpacity(0.06)),
-              ),
-              Positioned(
-                top: 20,
-                right: 80,
-                child: _glowCircle(60, Colors.white.withOpacity(0.05)),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 56, 20, 12),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white24,
-                      child: Icon(
-                        Icons.engineering,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Dashboard Tukang',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'Selamat Datang!',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _appBarBtn(Icons.refresh, () => _loadOrders(silent: false)),
-                    const SizedBox(width: 6),
-                    _appBarBtn(
-                      Icons.chat_bubble_outline,
-                      () => Navigator.pushNamed(context, '/chat'),
-                    ),
-                    const SizedBox(width: 6),
-                    _appBarBtn(
-                      Icons.person_outline,
-                      () => Navigator.pushNamed(
-                        context,
-                        '/profile',
-                      ).then((_) => _loadOrders()),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildHeader() => Container(
+    margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [_kIndigo, _kBlue2, _kBlue, _kTeal],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: [
+        BoxShadow(
+          color: _kBlue.withOpacity(0.22),
+          blurRadius: 22,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    ),
+    child: Stack(
+      children: [
+        Positioned(
+          top: -34,
+          right: -18,
+          child: _glowCircle(110, Colors.white.withOpacity(0.07)),
+        ),
+        Positioned(
+          bottom: -44,
+          left: -8,
+          child: _glowCircle(150, Colors.white.withOpacity(0.06)),
+        ),
+        Row(
+          children: [
+            const CircleAvatar(
+              radius: 26,
+              backgroundColor: Colors.white24,
+              child: Icon(
+                Icons.engineering,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Dashboard Tukang',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Selamat Datang!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _appBarBtn(Icons.refresh, () => _loadOrders(silent: false)),
+            const SizedBox(width: 6),
+            _appBarBtn(
+              Icons.chat_bubble_outline,
+              () => Navigator.pushNamed(context, '/chat'),
+            ),
+            const SizedBox(width: 6),
+            _appBarBtn(
+              Icons.person_outline,
+              () => Navigator.pushNamed(
+                context,
+                '/profile',
+              ).then((_) => _loadOrders()),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildTabBar() => Container(
+    margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(color: _kBlue.withOpacity(0.06), blurRadius: 12),
+      ],
+    ),
+    child: TabBar(
+      controller: _tabCtrl,
+      labelColor: _kBlue,
+      unselectedLabelColor: const Color(0xFF6B7280),
+      indicatorColor: _kBlue,
+      indicatorWeight: 3,
+      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+      tabs: [
+        Tab(text: 'Masuk (${_pending.length})'),
+        Tab(text: 'Aktif (${_active.length})'),
+        Tab(text: 'Selesai (${_done.length})'),
+      ],
+    ),
+  );
 
   Widget _appBarBtn(IconData icon, VoidCallback onTap) => GestureDetector(
     onTap: onTap,
@@ -724,44 +723,42 @@ class _DashboardScreenState extends State<DashboardScreen>
   );
 
   // ── Skeleton / Error ──────────────────────────────────────────────────────
-  Widget _buildSkeleton() => SafeArea(
-    child: Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(color: _kBlue.withOpacity(0.08), blurRadius: 24),
-          ],
-        ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.engineering_rounded, color: _kBlue, size: 42),
-            SizedBox(height: 16),
-            CircularProgressIndicator(color: _kBlue),
-            SizedBox(height: 16),
-            Text(
-              'Memuat dashboard tukang...',
-              style: TextStyle(
-                color: Color(0xFF1F2937),
-                fontWeight: FontWeight.w700,
-              ),
+  Widget _buildSkeleton() => Center(
+    child: Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(color: _kBlue.withOpacity(0.08), blurRadius: 24),
+        ],
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.engineering_rounded, color: _kBlue, size: 42),
+          SizedBox(height: 16),
+          CircularProgressIndicator(color: _kBlue),
+          SizedBox(height: 16),
+          Text(
+            'Memuat dashboard tukang...',
+            style: TextStyle(
+              color: Color(0xFF1F2937),
+              fontWeight: FontWeight.w700,
             ),
-            SizedBox(height: 6),
-            Text(
-              'Mengambil data dari Railway',
-              style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Mengambil data dari Railway',
+            style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+          ),
+        ],
       ),
     ),
   );
 
-  Widget _buildError() => Center(
+  Widget _buildError(String message) => Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -781,10 +778,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          _error!,
-          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14),
-        ),
+        Text(message, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: () => _loadOrders(silent: false),
@@ -802,29 +796,4 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     ),
   );
-}
-
-// ── Tab Bar Delegate for SliverPersistentHeader ───────────────────────────────
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-  const _TabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height + 8;
-  @override
-  double get maxExtent => tabBar.preferredSize.height + 8;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => Container(
-    color: _kBg,
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: tabBar,
-  );
-
-  @override
-  bool shouldRebuild(_TabBarDelegate old) => old.tabBar != tabBar;
 }

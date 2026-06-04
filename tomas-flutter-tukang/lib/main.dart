@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,8 +16,30 @@ import 'screens/chat/chat_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const TomasTukangApp());
-  unawaited(_bootstrapNotifications());
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('TOMAS_TUKANG_FLUTTER_ERROR: ${details.exceptionAsString()}');
+    if (details.stack != null) {
+      debugPrintStack(stackTrace: details.stack);
+    }
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('TOMAS_TUKANG_PLATFORM_ERROR: $error');
+    debugPrintStack(stackTrace: stack);
+    return true;
+  };
+
+  runZonedGuarded(
+    () {
+      debugPrint('TOMAS_TUKANG_BOOT: runApp');
+      runApp(const TomasTukangApp());
+      unawaited(_bootstrapNotifications());
+    },
+    (error, stack) {
+      debugPrint('TOMAS_TUKANG_ZONE_ERROR: $error');
+      debugPrintStack(stackTrace: stack);
+    },
+  );
 }
 
 Future<void> _bootstrapNotifications() async {
@@ -40,9 +63,8 @@ class TomasTukangApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      home: const SplashScreen(),
       routes: {
-        '/': (ctx) => const SplashScreen(),
         '/login': (ctx) => const LoginScreen(),
         '/register': (ctx) => const RegisterScreen(),
         '/ktp-upload': (ctx) => const KtpUploadScreen(),

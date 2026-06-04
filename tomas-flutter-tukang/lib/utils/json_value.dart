@@ -31,6 +31,16 @@ bool jsonBool(dynamic value, {bool fallback = false}) {
   return fallback;
 }
 
+double jsonDouble(dynamic value, {double fallback = 0}) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value.trim()) ?? fallback;
+  }
+  if (value is bool) return value ? 1 : 0;
+  return fallback;
+}
+
 String jsonString(dynamic value, {String fallback = ''}) {
   if (value == null) return fallback;
   return value.toString();

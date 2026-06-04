@@ -26,6 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('tukang_token');
+    debugPrint('TOMAS_TUKANG_BOOT: splash token=${token?.isNotEmpty == true}');
     if (token != null && token.isNotEmpty) {
       // Refresh FCM token di server saat auto-login
       NotificationService.saveFcmTokenToServer();
@@ -40,6 +41,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('TOMAS_TUKANG_BOOT: build splash');
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(

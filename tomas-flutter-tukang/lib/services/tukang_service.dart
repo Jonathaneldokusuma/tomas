@@ -25,6 +25,12 @@ class TukangService {
     return headers;
   }
 
+  static Future<Map<String, String>> _multipartHeaders() async {
+    final headers = await _headers();
+    headers.remove('Content-Type');
+    return headers;
+  }
+
   static Future<Map<String, dynamic>> register({
     required String nama,
     required String username,
@@ -168,6 +174,82 @@ class TukangService {
           Uri.parse('$baseUrl/tukang/profile'),
           headers: await _headers(),
           body: jsonEncode(data),
+        )
+        .timeout(_networkTimeout);
+    return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
+  }
+
+  static Future<List<String>> getAvailableCategories() async {
+    final res = await http
+        .get(Uri.parse('$baseUrl/layanan'), headers: await _headers())
+        .timeout(_networkTimeout);
+    final data = jsonDecode(res.body);
+    final items = data is List ? data : (data['data'] as List? ?? []);
+    return items
+        .map((item) {
+          if (item is Map<String, dynamic>) {
+            return item['nama_layanan']?.toString() ?? '';
+          }
+          if (item is Map) {
+            return item['nama_layanan']?.toString() ?? '';
+          }
+          return item.toString();
+        })
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
+  }
+
+  static Future<Map<String, dynamic>> addPortfolio({
+    String? judul,
+    String? deskripsi,
+    required String mediaPath,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/tukang/portfolio'),
+    );
+    request.headers.addAll(await _multipartHeaders());
+    if (judul != null && judul.trim().isNotEmpty) {
+      request.fields['judul'] = judul.trim();
+    }
+    if (deskripsi != null && deskripsi.trim().isNotEmpty) {
+      request.fields['deskripsi'] = deskripsi.trim();
+    }
+    request.files.add(
+      await http.MultipartFile.fromPath('media', mediaPath),
+    );
+
+    final streamed = await request.send().timeout(_networkTimeout);
+    final res = await http.Response.fromStream(streamed);
+    return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
+  }
+
+  static Future<Map<String, dynamic>> deletePortfolio(int id) async {
+    final res = await http
+        .delete(
+          Uri.parse('$baseUrl/tukang/portfolio/$id'),
+          headers: await _headers(),
+        )
+        .timeout(_networkTimeout);
+    return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
+  }
+
+  static Future<Map<String, dynamic>> getSupportMessages() async {
+    final res = await http
+        .get(Uri.parse('$baseUrl/tukang/support'), headers: await _headers())
+        .timeout(_networkTimeout);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> sendSupportMessage({
+    required String kategori,
+    required String pesan,
+  }) async {
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/support'),
+          headers: await _headers(),
+          body: jsonEncode({'kategori': kategori, 'pesan': pesan}),
         )
         .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};

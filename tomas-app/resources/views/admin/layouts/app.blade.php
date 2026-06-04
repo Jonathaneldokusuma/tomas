@@ -76,6 +76,9 @@
         <a href="{{ route('admin.broadcast') }}" class="nav-item {{ request()->routeIs('admin.broadcast*') ? 'active' : '' }}">
             <i class="fas fa-bullhorn"></i><span>Broadcast</span>
         </a>
+        <a href="{{ route('admin.support') }}" class="nav-item {{ request()->routeIs('admin.support*') ? 'active' : '' }}">
+            <i class="fas fa-headset"></i><span>Support</span>
+        </a>
     </nav>
 
     {{-- Bottom --}}

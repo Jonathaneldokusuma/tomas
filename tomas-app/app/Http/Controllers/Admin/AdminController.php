@@ -9,6 +9,7 @@ use App\Models\Layanan;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\Chat;
+use App\Models\SupportChat;
 use App\Models\Notifikasi;
 use App\Models\BroadcastMessage;
 use App\Models\FcmToken;
@@ -603,5 +604,79 @@ class AdminController extends Controller
     {
         BroadcastMessage::findOrFail($id)->delete();
         return back()->with('success', 'Pesan dihapus.');
+    }
+
+    // ─── Support Center (Pesan dari Tukang) ─────────────────────────────────
+
+    public function support(Request $request)
+    {
+        $selectedTukangId = $request->query('tukang_id');
+
+        $threads = SupportChat::with('tukang')
+            ->orderByDesc('id_support_chat')
+            ->get()
+            ->groupBy('id_tukang')
+            ->map(function ($messages) {
+                $last = $messages->first();
+                return [
+                    'id_tukang'      => $last->id_tukang,
+                    'tukang'         => $last->tukang,
+                    'kategori'       => $last->kategori,
+                    'last_message'   => $last->pesan,
+                    'last_time'      => $last->created_at,
+                    'total_messages' => $messages->count(),
+                    'from_tukang'    => $messages->where('dari_tukang', true)->count(),
+                    'from_admin'     => $messages->where('dari_tukang', false)->count(),
+                ];
+            })
+            ->sortByDesc(fn ($thread) => optional($thread['last_time'])->getTimestamp() ?? 0)
+            ->values();
+
+        if (!$selectedTukangId && $threads->isNotEmpty()) {
+            $selectedTukangId = (string) $threads->first()['id_tukang'];
+        }
+
+        $selectedTukang = $selectedTukangId ? Tukang::find($selectedTukangId) : null;
+        $messages = $selectedTukangId
+            ? SupportChat::where('id_tukang', $selectedTukangId)
+                ->orderBy('id_support_chat')
+                ->get()
+            : collect();
+
+        return view('admin.support.index', compact(
+            'threads',
+            'selectedTukang',
+            'selectedTukangId',
+            'messages'
+        ));
+    }
+
+    public function replySupport(Request $request, $id_tukang)
+    {
+        $request->validate([
+            'pesan' => 'required|string|max:1000',
+        ]);
+
+        $tukang = Tukang::findOrFail($id_tukang);
+        $kategori = SupportChat::where('id_tukang', $id_tukang)
+            ->orderByDesc('id_support_chat')
+            ->value('kategori') ?? 'bantuan';
+
+        SupportChat::create([
+            'id_tukang'   => $tukang->id_tukang,
+            'kategori'    => $kategori,
+            'pesan'       => $request->pesan,
+            'dari_tukang' => false,
+        ]);
+
+        $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
+        FcmService::sendToMany(
+            $tokens,
+            'Balasan dari Pusat',
+            \Str::limit($request->pesan, 80),
+            ['type' => 'support_reply', 'id_tukang' => (string) $tukang->id_tukang]
+        );
+
+        return back()->with('success', 'Balasan berhasil dikirim ke tukang.');
     }
 }

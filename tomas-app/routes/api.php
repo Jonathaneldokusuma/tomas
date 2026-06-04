@@ -37,6 +37,11 @@ Route::prefix('tukang')->group(function () {
     Route::get('/profile',                      [TukangDashboardController::class, 'profile']);
     Route::put('/profile',                      [TukangDashboardController::class, 'updateProfile']);
     Route::post('/upload-ktp',                  [TukangDashboardController::class, 'uploadKtp']);
+    Route::get('/portfolio',                    [TukangDashboardController::class, 'portfolioIndex']);
+    Route::post('/portfolio',                   [TukangDashboardController::class, 'portfolioStore']);
+    Route::delete('/portfolio/{id}',            [TukangDashboardController::class, 'portfolioDestroy']);
+    Route::get('/support',                      [TukangDashboardController::class, 'supportIndex']);
+    Route::post('/support',                     [TukangDashboardController::class, 'supportStore']);
 
     // Chat tukang ↔ pelanggan
     Route::get('/chat',            [TukangDashboardController::class, 'chatInbox']);

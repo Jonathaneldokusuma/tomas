@@ -10,6 +10,10 @@ class Tukang extends Model
     protected $primaryKey = 'id_tukang';
     public $timestamps = true;
 
+    protected $hidden = [
+        'password',
+    ];
+
     protected $fillable = [
         'nama', 'status_aktif', 'lokasi', 'alamat', 'kategori', 'bio', 'foto', 'tarif',
         'username', 'password', 'no_hp', 'no_ktp', 'foto_ktp', 'foto_selfie',
@@ -29,6 +33,16 @@ class Tukang extends Model
     public function favorit()
     {
         return $this->hasMany(Favorit::class, 'id_tukang', 'id_tukang');
+    }
+
+    public function portfolios()
+    {
+        return $this->hasMany(Portfolio::class, 'id_tukang', 'id_tukang');
+    }
+
+    public function supportChats()
+    {
+        return $this->hasMany(SupportChat::class, 'id_tukang', 'id_tukang');
     }
 
     public function isFavoritedBy($userId)

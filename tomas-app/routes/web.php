@@ -96,6 +96,10 @@ Route::prefix('admin')->middleware('admin')->group(function () {
     Route::get('/pembayaran',               [AdminController::class, 'pembayaran'])->name('admin.pembayaran');
     Route::post('/pembayaran/{id}/konfirmasi', [AdminController::class, 'konfirmasiPembayaran'])->name('admin.pembayaran.konfirmasi');
 
+    // Support center tukang
+    Route::get('/support',                  [AdminController::class, 'support'])->name('admin.support');
+    Route::post('/support/{id_tukang}',     [AdminController::class, 'replySupport'])->name('admin.support.reply');
+
     // Broadcast pesan ke tukang
     Route::get('/broadcast',                [AdminController::class, 'broadcast'])->name('admin.broadcast');
     Route::post('/broadcast',               [AdminController::class, 'storeBroadcast'])->name('admin.broadcast.store');

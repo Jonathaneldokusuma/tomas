@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Portfolio;
+use App\Models\Review;
+use App\Models\SupportChat;
+use App\Models\Layanan;
 use App\Models\Tukang;
 use App\Models\Chat;
 use App\Models\User;
@@ -207,7 +211,7 @@ class TukangDashboardController extends Controller
         $tukang = $this->getTukang($request);
         if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
 
-        return response()->json(['tukang' => $tukang]);
+        return response()->json($this->profilePayload($tukang));
     }
 
     // PUT /api/tukang/profile
@@ -243,6 +247,113 @@ class TukangDashboardController extends Controller
         $tukang->update($data);
 
         return response()->json(['message' => 'Profil diperbarui', 'tukang' => $tukang->fresh()]);
+    }
+
+    // GET /api/tukang/portfolio
+    public function portfolioIndex(Request $request)
+    {
+        $tukang = $this->getTukang($request);
+        if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
+
+        return response()->json([
+            'portfolio' => $this->portfolioList($tukang),
+        ]);
+    }
+
+    // POST /api/tukang/portfolio
+    public function portfolioStore(Request $request)
+    {
+        $tukang = $this->getTukang($request);
+        if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $validator = Validator::make($request->all(), [
+            'judul' => 'nullable|string|max:150',
+            'deskripsi' => 'nullable|string|max:1000',
+            'media' => 'required|image|max:5120',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $media = $request->file('media');
+        $path = $media->store('tukang/portfolio', 'public');
+        $item = Portfolio::create([
+            'id_tukang' => $tukang->id_tukang,
+            'judul' => $request->input('judul'),
+            'deskripsi' => $request->input('deskripsi'),
+            'media_path' => $path,
+            'media_type' => 'image',
+        ]);
+
+        return response()->json([
+            'message' => 'Portofolio ditambahkan',
+            'portfolio' => $this->formatPortfolio($item->fresh()),
+        ], 201);
+    }
+
+    // DELETE /api/tukang/portfolio/{id}
+    public function portfolioDestroy(Request $request, $id)
+    {
+        $tukang = $this->getTukang($request);
+        if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $item = Portfolio::where('id_portfolio', $id)
+            ->where('id_tukang', $tukang->id_tukang)
+            ->first();
+
+        if (!$item) {
+            return response()->json(['message' => 'Portofolio tidak ditemukan'], 404);
+        }
+
+        if ($item->media_path) {
+            Storage::disk('public')->delete($item->media_path);
+        }
+
+        $item->delete();
+
+        return response()->json(['message' => 'Portofolio dihapus']);
+    }
+
+    // GET /api/tukang/support
+    public function supportIndex(Request $request)
+    {
+        $tukang = $this->getTukang($request);
+        if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $messages = SupportChat::where('id_tukang', $tukang->id_tukang)
+            ->orderBy('id_support_chat')
+            ->get(['id_support_chat', 'kategori', 'pesan', 'dari_tukang', 'created_at']);
+
+        return response()->json([
+            'messages' => $messages,
+        ]);
+    }
+
+    // POST /api/tukang/support
+    public function supportStore(Request $request)
+    {
+        $tukang = $this->getTukang($request);
+        if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $validator = Validator::make($request->all(), [
+            'kategori' => 'required|in:bantuan,laporan,bug,saran,lainnya',
+            'pesan'    => 'required|string|max:1000',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $message = SupportChat::create([
+            'id_tukang'   => $tukang->id_tukang,
+            'kategori'    => $request->input('kategori', 'bantuan'),
+            'pesan'       => $request->input('pesan'),
+            'dari_tukang' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'Pesan terkirim ke pusat',
+            'support' => $message->fresh(),
+        ], 201);
     }
 
     // POST /api/tukang/upload-ktp
@@ -361,5 +472,158 @@ class TukangDashboardController extends Controller
 
         $messages = BroadcastMessage::orderByDesc('created_at')->take(50)->get();
         return response()->json(['broadcasts' => $messages]);
+    }
+
+    private function profilePayload(Tukang $tukang): array
+    {
+        $ordersQuery = Order::where('id_tukang', $tukang->id_tukang);
+        $totalOrders = (clone $ordersQuery)->count();
+        $completedOrders = (clone $ordersQuery)->where('status', 'done')->count();
+        $portfolioItems = Portfolio::where('id_tukang', $tukang->id_tukang)
+            ->orderByDesc('id_portfolio')
+            ->get();
+        $reviews = Review::whereHas('order', function ($query) use ($tukang) {
+            $query->where('id_tukang', $tukang->id_tukang);
+        })->get(['rating']);
+        $averageRating = $reviews->count() ? round((float) $reviews->avg('rating'), 1) : 0;
+        $rank = $this->rankTukang($tukang);
+
+        return [
+            'tukang' => $tukang,
+            'stats' => [
+                'orders_total' => $totalOrders,
+                'orders_done' => $completedOrders,
+                'portfolio_count' => $portfolioItems->count(),
+                'reviews_count' => $reviews->count(),
+                'avg_rating' => $averageRating,
+                'rank' => $rank,
+            ],
+            'badges' => $this->buildBadges($tukang, $completedOrders, $reviews->count(), $averageRating, $portfolioItems->count(), $rank),
+            'portfolio' => $portfolioItems->map(fn ($item) => $this->formatPortfolio($item))->values(),
+            'categories' => Layanan::orderBy('nama_layanan')
+                ->pluck('nama_layanan')
+                ->filter()
+                ->values(),
+        ];
+    }
+
+    private function portfolioList(Tukang $tukang)
+    {
+        return Portfolio::where('id_tukang', $tukang->id_tukang)
+            ->orderByDesc('id_portfolio')
+            ->get()
+            ->map(fn ($item) => $this->formatPortfolio($item))
+            ->values();
+    }
+
+    private function formatPortfolio(Portfolio $item): array
+    {
+        return [
+            'id_portfolio' => $item->id_portfolio,
+            'judul' => $item->judul ?? 'Portofolio',
+            'deskripsi' => $item->deskripsi ?? '',
+            'media_url' => $item->media_path ? url('storage/' . $item->media_path) : null,
+            'media_type' => $item->media_type ?? 'image',
+            'created_at' => optional($item->created_at)->toISOString(),
+        ];
+    }
+
+    private function buildBadges(
+        Tukang $tukang,
+        int $completedOrders,
+        int $reviewsCount,
+        float $avgRating,
+        int $portfolioCount,
+        int $rank
+    ): array {
+        $badges = [];
+
+        if ($tukang->status_verifikasi === 'verified') {
+            $badges[] = [
+                'key' => 'verified_partner',
+                'label' => 'Verified Partner',
+                'description' => 'Sudah diverifikasi admin',
+                'icon' => 'verified',
+                'color' => '#16A34A',
+            ];
+        }
+
+        if ($completedOrders >= 1) {
+            $badges[] = [
+                'key' => 'first_job',
+                'label' => 'Job Starter',
+                'description' => 'Pernah menyelesaikan pekerjaan',
+                'icon' => 'work_history',
+                'color' => '#2563EB',
+            ];
+        }
+
+        if ($completedOrders >= 10) {
+            $badges[] = [
+                'key' => 'pro_worker',
+                'label' => 'Pro Worker',
+                'description' => 'Lebih dari 10 pekerjaan selesai',
+                'icon' => 'workspace_premium',
+                'color' => '#7C3AED',
+            ];
+        }
+
+        if ($portfolioCount >= 3) {
+            $badges[] = [
+                'key' => 'portfolio_pro',
+                'label' => 'Portfolio Pro',
+                'description' => 'Punya portofolio yang lengkap',
+                'icon' => 'collections',
+                'color' => '#0EA5E9',
+            ];
+        }
+
+        if ($reviewsCount >= 5 && $avgRating >= 4.8) {
+            $badges[] = [
+                'key' => 'top_rated',
+                'label' => 'Top Rated',
+                'description' => 'Nilai pelanggan sangat tinggi',
+                'icon' => 'star',
+                'color' => '#F59E0B',
+            ];
+        }
+
+        if ($rank === 1) {
+            $badges[] = [
+                'key' => 'no_1_tukang',
+                'label' => '#1 Tukang',
+                'description' => 'Peringkat terbaik saat ini',
+                'icon' => 'emoji_events',
+                'color' => '#DC2626',
+            ];
+        }
+
+        return $badges;
+    }
+
+    private function rankTukang(Tukang $current): int
+    {
+        $workers = Tukang::where('status_aktif', 1)
+            ->where('status_verifikasi', 'verified')
+            ->get();
+
+        $scores = $workers->map(function (Tukang $worker) {
+            $ordersQuery = Order::where('id_tukang', $worker->id_tukang);
+            $completedOrders = (clone $ordersQuery)->where('status', 'done')->count();
+            $reviews = Review::whereHas('order', function ($query) use ($worker) {
+                $query->where('id_tukang', $worker->id_tukang);
+            })->get(['rating']);
+            $avgRating = $reviews->count() ? (float) $reviews->avg('rating') : 0;
+            $portfolioCount = Portfolio::where('id_tukang', $worker->id_tukang)->count();
+
+            return [
+                'id' => $worker->id_tukang,
+                'score' => ($completedOrders * 10) + ($avgRating * 6) + ($portfolioCount * 2),
+            ];
+        })->sortByDesc('score')->values();
+
+        $position = $scores->search(fn ($row) => (int) $row['id'] === (int) $current->id_tukang);
+
+        return $position === false ? 0 : $position + 1;
     }
 }
