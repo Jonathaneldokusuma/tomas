@@ -32,6 +32,9 @@ class FcmService
         if (!$token) return false;
 
         try {
+            $channelId = $data['channel_id'] ?? env('FCM_ANDROID_CHANNEL_ID', 'tomas_notifications');
+            unset($data['channel_id']);
+
             $payload = [
                 'message' => [
                     'token' => $fcmToken,
@@ -42,7 +45,7 @@ class FcmService
                     'android' => [
                         'priority' => 'high',
                         'notification' => [
-                            'channel_id'  => 'tomas_notifications',
+                            'channel_id'  => $channelId,
                             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                         ],
                     ],

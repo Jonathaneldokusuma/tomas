@@ -14,7 +14,7 @@ class TukangController extends Controller
         $q       = $request->query('q');
         $layanan = $request->query('layanan');
 
-        $query = Tukang::where('status_aktif', 1)->where('status_verifikasi', 'verified');
+        $query = $this->visibleTukangQuery();
         if ($q) {
             $query->where(fn($q2) => $q2->where('nama', 'like', "%$q%")
                 ->orWhere('kategori', 'like', "%$q%")
@@ -22,25 +22,25 @@ class TukangController extends Controller
         }
         if ($layanan) $query->where('kategori', $layanan);
 
-        return response()->json($query->latest()->get()->map(fn($t) => $this->fmt($t)));
+        return $this->jsonNoCache($query->latest()->get()->map(fn($t) => $this->fmt($t)));
     }
 
     public function show($id)
     {
-        return response()->json($this->fmt(Tukang::findOrFail($id)));
+        return $this->jsonNoCache($this->fmt($this->visibleTukangQuery()->findOrFail($id)));
     }
 
     public function byLayanan()
     {
         $result = [];
         foreach (Layanan::orderBy('id_layanan')->get() as $lv) {
-            $list = Tukang::where('status_aktif', 1)
+            $list = $this->visibleTukangQuery()
                 ->where('kategori', $lv->nama_layanan)->take(10)->get();
             if ($list->count()) {
                 $result[] = ['layanan' => $lv, 'tukang' => $list->map(fn($t) => $this->fmt($t))->values()];
             }
         }
-        return response()->json($result);
+        return $this->jsonNoCache($result);
     }
 
     private function fmt(Tukang $t): array
@@ -59,6 +59,20 @@ class TukangController extends Controller
             'rating'       => 4.7,
             'latitude'     => $t->latitude ? (float) $t->latitude : null,
             'longitude'    => $t->longitude ? (float) $t->longitude : null,
+            'updated_at'    => $t->updated_at?->toISOString(),
         ];
+    }
+
+    private function visibleTukangQuery()
+    {
+        return Tukang::where('status_aktif', 1)
+            ->where('status_verifikasi', 'verified');
+    }
+
+    private function jsonNoCache($data, int $status = 200)
+    {
+        return response()->json($data, $status)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 }

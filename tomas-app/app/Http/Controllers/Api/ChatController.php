@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
+use App\Models\FcmToken;
 use App\Models\Tukang;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
@@ -72,6 +74,8 @@ class ChatController extends Controller
     {
         $request->validate(['pesan' => 'required|string|max:1000']);
 
+        $tukang = Tukang::findOrFail($id_tukang);
+
         $chat = Chat::create([
             'id_user'    => $request->user()->id_user,
             'id_tukang'  => $id_tukang,
@@ -79,6 +83,14 @@ class ChatController extends Controller
             'dari_user'  => true,
             'created_at' => now(),
         ]);
+
+        $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
+        FcmService::sendToMany(
+            $tokens,
+            'Pesan dari ' . ($request->user()->nama ?? 'Pelanggan'),
+            \Str::limit($request->pesan, 80),
+            ['type' => 'chat', 'id_user' => (string) $request->user()->id_user]
+        );
 
         return response()->json($chat, 201);
     }

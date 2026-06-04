@@ -233,8 +233,13 @@ class AdminController extends Controller
     public function tukang(Request $request)
     {
         $q = $request->query('q');
-        $list = Tukang::when($q, fn($query) => $query->where('nama', 'like', "%$q%")
-                                                      ->orWhere('kategori', 'like', "%$q%"))
+        $status = $request->query('status');
+
+        $list = Tukang::when($q, fn($query) => $query->where(function ($sub) use ($q) {
+                            $sub->where('nama', 'like', "%$q%")
+                                ->orWhere('kategori', 'like', "%$q%");
+                        }))
+                      ->when(in_array($status, ['0', '1'], true), fn($query) => $query->where('status_aktif', (int) $status))
                       ->orderByDesc('id_tukang')->paginate(15);
         $layananList = Layanan::all();
         return view('admin.tukang.index', compact('list', 'q', 'layananList'));
@@ -270,6 +275,7 @@ class AdminController extends Controller
             'bio'          => $request->bio,
             'tarif'        => $request->tarif,
             'status_aktif' => $request->status_aktif,
+            'status_verifikasi' => 'verified',
             'foto'         => $fotoPath,
         ]);
 
@@ -304,6 +310,10 @@ class AdminController extends Controller
             'tarif'        => $request->tarif,
             'status_aktif' => $request->status_aktif,
         ];
+
+        if (blank($tukang->username)) {
+            $data['status_verifikasi'] = 'verified';
+        }
 
         if ($request->hasFile('foto')) {
             if ($tukang->foto) \Storage::disk('public')->delete($tukang->foto);

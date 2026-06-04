@@ -14,7 +14,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'tomas_user_channel';
+  static const _channelId = 'tomas_notifications';
   static const _channelName = 'Tomas Notifications';
 
   static Future<void> init() async {
@@ -41,6 +41,11 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(channel);
+    await _local
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
 
     // --- Firebase Messaging setup ---
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -63,6 +68,10 @@ class NotificationService {
         );
       }
     });
+
+    FirebaseMessaging.instance.onTokenRefresh.listen((_) {
+      saveFcmTokenToServer();
+    });
   }
 
   /// Ambil FCM token dan kirim ke backend. Panggil setelah login berhasil.
@@ -72,10 +81,6 @@ class NotificationService {
       if (fcmToken == null) return;
 
       final prefs = await SharedPreferences.getInstance();
-      final lastSaved = prefs.getString('last_fcm_token');
-
-      // Hanya kirim kalau token berubah
-      if (fcmToken == lastSaved) return;
 
       await ApiService.saveFcmToken(fcmToken);
       await prefs.setString('last_fcm_token', fcmToken);
