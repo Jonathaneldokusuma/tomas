@@ -90,7 +90,7 @@ class _BottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: SizedBox(
-          height: 64,
+          height: 60,
           child: Row(
             children: [
               _NavItem(
@@ -117,8 +117,8 @@ class _BottomNav extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 50,
-                        height: 50,
+                        width: 46,
+                        height: 46,
                         decoration: BoxDecoration(
                           color: _kBlue,
                           shape: BoxShape.circle,
@@ -133,14 +133,14 @@ class _BottomNav extends StatelessWidget {
                         child: const Icon(
                           Icons.add,
                           color: Colors.white,
-                          size: 28,
+                          size: 26,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       const Text(
                         'Tambah',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 9,
                           color: Color(0xFF9CA3AF),
                           fontWeight: FontWeight.normal,
                         ),
@@ -256,7 +256,7 @@ class _HomeTabState extends State<_HomeTab> {
       final unread = await ApiService.getUnreadCount();
       if (!mounted) return;
       setState(() {
-        _unreadCount = unread as int;
+        _unreadCount = unread;
         _loading = false;
       });
     } catch (_) {
@@ -482,7 +482,7 @@ class _HomeTabState extends State<_HomeTab> {
                       borderRadius: BorderRadius.circular(18),
                       child: Container(
                         width: double.infinity,
-                        height: 156,
+                        height: 168,
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
@@ -536,7 +536,7 @@ class _HomeTabState extends State<_HomeTab> {
                                 18,
                                 14,
                                 90,
-                                14,
+                                12,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +580,7 @@ class _HomeTabState extends State<_HomeTab> {
                                     'SOLUSI JASA\nTERLENGKAP!',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 18,
+                                      fontSize: 17,
                                       fontWeight: FontWeight.w900,
                                       height: 1.15,
                                       letterSpacing: 0.3,
@@ -606,8 +606,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     ),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                        horizontal: 15,
+                                        vertical: 7,
                                       ),
                                       decoration: BoxDecoration(
                                         color: _kOrange,

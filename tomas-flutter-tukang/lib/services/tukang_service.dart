@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../utils/json_value.dart';
 
 class TukangService {
   static final String baseUrl = AppConfig.apiBaseUrl;
+  static const Duration _networkTimeout = Duration(seconds: 15);
 
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -51,14 +53,16 @@ class TukangService {
     if (longitude != null) {
       body['longitude'] = longitude;
     }
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/register'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/register'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(_networkTimeout);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -66,20 +70,23 @@ class TukangService {
     required String username,
     required String password,
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/login'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'username': username, 'password': password}),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/login'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'username': username, 'password': password}),
+        )
+        .timeout(_networkTimeout);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200 && data['token'] != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('tukang_token', data['token']);
-      await prefs.setString('tukang_nama', data['tukang']['nama'] ?? '');
-      await prefs.setInt('tukang_id', data['tukang']['id_tukang'] ?? 0);
+      final tukang = data['tukang'] as Map<String, dynamic>? ?? {};
+      await prefs.setString('tukang_token', jsonString(data['token']));
+      await prefs.setString('tukang_nama', jsonString(tukang['nama']));
+      await prefs.setInt('tukang_id', jsonInt(tukang['id_tukang']));
     }
     return {'statusCode': res.statusCode, ...data};
   }
@@ -92,18 +99,19 @@ class TukangService {
   }
 
   static Future<Map<String, dynamic>> getOrders() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/orders'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .get(Uri.parse('$baseUrl/tukang/orders'), headers: await _headers())
+        .timeout(_networkTimeout);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   static Future<Map<String, dynamic>> acceptOrder(int id) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/orders/$id/accept'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/orders/$id/accept'),
+          headers: await _headers(),
+        )
+        .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
@@ -111,11 +119,13 @@ class TukangService {
     int id, {
     String catatan = '',
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/orders/$id/reject'),
-      headers: await _headers(),
-      body: jsonEncode({'catatan': catatan}),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/orders/$id/reject'),
+          headers: await _headers(),
+          body: jsonEncode({'catatan': catatan}),
+        )
+        .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
@@ -123,57 +133,63 @@ class TukangService {
     int id,
     String status,
   ) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/orders/$id/status'),
-      headers: await _headers(),
-      body: jsonEncode({'status': status}),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/orders/$id/status'),
+          headers: await _headers(),
+          body: jsonEncode({'status': status}),
+        )
+        .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
   static Future<Map<String, dynamic>> confirmPayment(int id) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/orders/$id/confirm-payment'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/orders/$id/confirm-payment'),
+          headers: await _headers(),
+        )
+        .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
   static Future<Map<String, dynamic>> getProfile() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/profile'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .get(Uri.parse('$baseUrl/tukang/profile'), headers: await _headers())
+        .timeout(_networkTimeout);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   static Future<Map<String, dynamic>> updateProfile(
     Map<String, dynamic> data,
   ) async {
-    final res = await http.put(
-      Uri.parse('$baseUrl/tukang/profile'),
-      headers: await _headers(),
-      body: jsonEncode(data),
-    );
+    final res = await http
+        .put(
+          Uri.parse('$baseUrl/tukang/profile'),
+          headers: await _headers(),
+          body: jsonEncode(data),
+        )
+        .timeout(_networkTimeout);
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
   // ── CHAT ─────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getChatInbox() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/chat'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .get(Uri.parse('$baseUrl/tukang/chat'), headers: await _headers())
+        .timeout(_networkTimeout);
     final data = jsonDecode(res.body);
     return (data['conversations'] as List?) ?? [];
   }
 
   static Future<Map<String, dynamic>> getChatMessages(int idUser) async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/chat/$idUser'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .get(
+          Uri.parse('$baseUrl/tukang/chat/$idUser'),
+          headers: await _headers(),
+        )
+        .timeout(_networkTimeout);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -181,11 +197,13 @@ class TukangService {
     int idUser,
     String pesan,
   ) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/tukang/chat/$idUser'),
-      headers: await _headers(),
-      body: jsonEncode({'pesan': pesan}),
-    );
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/tukang/chat/$idUser'),
+          headers: await _headers(),
+          body: jsonEncode({'pesan': pesan}),
+        )
+        .timeout(_networkTimeout);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     return {'statusCode': res.statusCode, ...data};
   }
@@ -194,21 +212,22 @@ class TukangService {
 
   static Future<void> saveFcmToken(String fcmToken) async {
     try {
-      await http.post(
-        Uri.parse('$baseUrl/tukang/fcm-token'),
-        headers: await _headers(),
-        body: jsonEncode({'token': fcmToken}),
-      );
+      await http
+          .post(
+            Uri.parse('$baseUrl/tukang/fcm-token'),
+            headers: await _headers(),
+            body: jsonEncode({'token': fcmToken}),
+          )
+          .timeout(_networkTimeout);
     } catch (_) {}
   }
 
   // ── BROADCAST (Pesan dari Pusat) ─────────────────────────────
 
   static Future<List<dynamic>> getBroadcasts() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/broadcast'),
-      headers: await _headers(),
-    );
+    final res = await http
+        .get(Uri.parse('$baseUrl/tukang/broadcast'), headers: await _headers())
+        .timeout(_networkTimeout);
     final data = jsonDecode(res.body);
     return (data['broadcasts'] as List?) ?? [];
   }

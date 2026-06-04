@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/tukang_service.dart';
 import '../services/notification_service.dart';
+import '../utils/json_value.dart';
 
 // ── Color Palette ─────────────────────────────────────────────────────────────
 const _kBlue = Color(0xFF2563EB);
@@ -540,7 +541,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             label: 'Terima',
                             icon: Icons.check_rounded,
                             color: Colors.green,
-                            onTap: () => _accept(order['id_order']),
+                            onTap: () => _accept(jsonInt(order['id_order'])),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -550,7 +551,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             icon: Icons.close_rounded,
                             color: Colors.red,
                             outlined: true,
-                            onTap: () => _confirmReject(order['id_order']),
+                            onTap: () =>
+                                _confirmReject(jsonInt(order['id_order'])),
                           ),
                         ),
                       ],
@@ -722,8 +724,42 @@ class _DashboardScreenState extends State<DashboardScreen>
   );
 
   // ── Skeleton / Error ──────────────────────────────────────────────────────
-  Widget _buildSkeleton() =>
-      const Center(child: CircularProgressIndicator(color: _kBlue));
+  Widget _buildSkeleton() => SafeArea(
+    child: Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(color: _kBlue.withOpacity(0.08), blurRadius: 24),
+          ],
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.engineering_rounded, color: _kBlue, size: 42),
+            SizedBox(height: 16),
+            CircularProgressIndicator(color: _kBlue),
+            SizedBox(height: 16),
+            Text(
+              'Memuat dashboard tukang...',
+              style: TextStyle(
+                color: Color(0xFF1F2937),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Mengambil data dari Railway',
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _buildError() => Center(
     child: Column(

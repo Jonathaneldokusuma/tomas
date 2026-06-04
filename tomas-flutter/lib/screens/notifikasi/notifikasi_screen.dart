@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../utils/json_value.dart';
 
 const _kBlue = Color(0xFF2563EB);
 
@@ -124,12 +125,12 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                 itemCount: _list.length,
                 itemBuilder: (_, i) {
                   final n = _list[i] as Map<String, dynamic>;
-                  final read = n['dibaca'] == true;
-                  final tipe = n['tipe'] as String?;
+                  final read = jsonBool(n['dibaca']);
+                  final tipe = jsonStringOrNull(n['tipe']);
                   return InkWell(
                     onTap: read
                         ? null
-                        : () => _markOne(n['id_notif'] as int, i),
+                        : () => _markOne(jsonInt(n['id_notif']), i),
                     child: Container(
                       margin: const EdgeInsets.symmetric(
                         horizontal: 16,

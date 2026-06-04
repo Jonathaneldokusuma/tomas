@@ -1,4 +1,5 @@
 import 'tukang.dart';
+import '../utils/json_value.dart';
 
 class Layanan {
   final int idLayanan;
@@ -6,8 +7,10 @@ class Layanan {
 
   Layanan({required this.idLayanan, required this.namaLayanan});
 
-  factory Layanan.fromJson(Map<String, dynamic> j) =>
-      Layanan(idLayanan: j['id_layanan'], namaLayanan: j['nama_layanan']);
+  factory Layanan.fromJson(Map<String, dynamic> j) => Layanan(
+    idLayanan: jsonInt(j['id_layanan']),
+    namaLayanan: jsonString(j['nama_layanan'], fallback: 'Layanan'),
+  );
 }
 
 class LayananWithTukang {
@@ -16,8 +19,11 @@ class LayananWithTukang {
 
   LayananWithTukang({required this.layanan, required this.tukangList});
 
-  factory LayananWithTukang.fromJson(Map<String, dynamic> j) => LayananWithTukang(
-        layanan: Layanan.fromJson(j['layanan']),
-        tukangList: (j['tukang'] as List).map((t) => Tukang.fromJson(t)).toList(),
+  factory LayananWithTukang.fromJson(Map<String, dynamic> j) =>
+      LayananWithTukang(
+        layanan: Layanan.fromJson(j['layanan'] as Map<String, dynamic>),
+        tukangList: (j['tukang'] as List? ?? [])
+            .map((t) => Tukang.fromJson(t as Map<String, dynamic>))
+            .toList(),
       );
 }

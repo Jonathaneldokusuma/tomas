@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../utils/json_value.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -83,8 +84,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   final tukang = item['tukang'] as Map<String, dynamic>;
                   return _ChatItem(
                     tukang: tukang,
-                    lastMessage: item['last_message'] as String? ?? '',
-                    unread: item['unread'] as int? ?? 0,
+                    lastMessage: jsonString(item['last_message']),
+                    unread: jsonInt(item['unread']),
                   );
                 },
               ),
@@ -111,9 +112,9 @@ class _ChatItem extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (_) => ChatScreen(
-            idTukang: tukang['id_tukang'] as int,
-            namaTukang: tukang['nama'] as String,
-            fotoUrl: tukang['foto_url'] as String?,
+            idTukang: jsonInt(tukang['id_tukang']),
+            namaTukang: jsonString(tukang['nama'], fallback: 'Tukang'),
+            fotoUrl: jsonStringOrNull(tukang['foto_url']),
           ),
         ),
       ),

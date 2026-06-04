@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../utils/json_value.dart';
 
 class ApiService {
   static final String baseUrl = AppConfig.apiBaseUrl;
@@ -283,7 +284,7 @@ class ApiService {
       headers: await _headers(auth: true),
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    return body['count'] as int? ?? 0;
+    return jsonInt(body['count']);
   }
 
   static Future<void> markNotifRead(int id) async {
@@ -299,7 +300,6 @@ class ApiService {
       headers: await _headers(auth: true),
     );
   }
-
 
   // ── FCM Token ────────────────────────────────────────────────────────────
 

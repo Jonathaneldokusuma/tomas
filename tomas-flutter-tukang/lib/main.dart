@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/notification_service.dart';
@@ -13,9 +15,17 @@ import 'screens/chat/chat_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await NotificationService.init();
   runApp(const TomasTukangApp());
+  unawaited(_bootstrapNotifications());
+}
+
+Future<void> _bootstrapNotifications() async {
+  try {
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
+    await NotificationService.init().timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Firebase config can be incomplete during debug installs. Never block UI.
+  }
 }
 
 class TomasTukangApp extends StatelessWidget {

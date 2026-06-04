@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/tukang_service.dart';
+import '../../utils/json_value.dart';
 import 'chat_detail_screen.dart';
 import 'broadcast_screen.dart';
 
@@ -78,10 +79,7 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
       ),
       body: TabBarView(
         controller: _tabCtrl,
-        children: [
-          _buildChatTab(),
-          _buildBroadcastTab(),
-        ],
+        children: [_buildChatTab(), _buildBroadcastTab()],
       ),
     );
   }
@@ -97,8 +95,10 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
           children: [
             Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 12),
-            Text('Belum ada percakapan',
-                style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+            Text(
+              'Belum ada percakapan',
+              style: TextStyle(color: Colors.grey[500], fontSize: 16),
+            ),
           ],
         ),
       );
@@ -113,7 +113,7 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
           final user = conv['user'] as Map<String, dynamic>?;
           final name = user?['name'] ?? 'Pelanggan';
           final lastMsg = conv['last_message'] ?? '';
-          final unread = conv['unread'] ?? 0;
+          final unread = jsonInt(conv['unread']);
           final lastTime = conv['last_time'] != null
               ? _formatTime(conv['last_time'].toString())
               : '';
@@ -123,10 +123,16 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
               backgroundColor: const Color(0xFF1976D2),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Text(
               lastMsg,
               maxLines: 1,
@@ -138,18 +144,25 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (lastTime.isNotEmpty)
-                  Text(lastTime,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                  Text(
+                    lastTime,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
                 if (unread > 0) ...[
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: const BoxDecoration(
                       color: Color(0xFF1976D2),
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
-                    child: Text('$unread',
-                        style: const TextStyle(color: Colors.white, fontSize: 11)),
+                    child: Text(
+                      '$unread',
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
                   ),
                 ],
               ],
@@ -158,7 +171,7 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
               context,
               MaterialPageRoute(
                 builder: (_) => ChatDetailScreen(
-                  idUser: user?['id_user'] ?? 0,
+                  idUser: jsonInt(user?['id_user']),
                   namaUser: name,
                 ),
               ),
@@ -180,8 +193,10 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
           children: [
             Icon(Icons.campaign_outlined, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 12),
-            Text('Belum ada pesan dari pusat',
-                style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+            Text(
+              'Belum ada pesan dari pusat',
+              style: TextStyle(color: Colors.grey[500], fontSize: 16),
+            ),
           ],
         ),
       );
@@ -236,19 +251,30 @@ class _TukangChatListScreenState extends State<TukangChatListScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(msg['judul'] ?? '',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(
+                            msg['judul'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(msg['isi'] ?? '',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  TextStyle(color: Colors.grey[600], fontSize: 13)),
+                          Text(
+                            msg['isi'] ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             _formatTime(msg['created_at']?.toString() ?? ''),
-                            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[400],
+                            ),
                           ),
                         ],
                       ),

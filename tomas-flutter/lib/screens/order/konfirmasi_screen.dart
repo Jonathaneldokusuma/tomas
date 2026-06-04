@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/tukang.dart';
 import '../../models/layanan.dart';
+import '../../utils/json_value.dart';
 import 'order_success_screen.dart';
 import 'map_picker_screen.dart';
 import 'package:latlong2/latlong.dart';
@@ -199,7 +200,7 @@ class _KonfirmasiScreenState extends State<KonfirmasiScreen> {
             jam: _jamStr,
             alamat: _alamat,
             metodeBayar: _metodeBayar,
-            idOrder: res['id_order'] as int?,
+            idOrder: jsonIntOrNull(res['id_order']),
           ),
         ),
       );

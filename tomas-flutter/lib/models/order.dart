@@ -1,3 +1,5 @@
+import '../utils/json_value.dart';
+
 class Order {
   final int idOrder;
   final Map<String, dynamic>? tukang;
@@ -16,12 +18,14 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
-    idOrder: j['id_order'],
+    idOrder: jsonInt(j['id_order']),
     tukang: j['tukang'] as Map<String, dynamic>?,
     layanan: j['layanan'] as Map<String, dynamic>?,
-    hasReview: j['has_review'] == true,
-    pembayaranStatus:
-        (j['pembayaran'] as Map<String, dynamic>?)?['status'] ?? 'unpaid',
-    status: j['status'] as String? ?? 'pending',
+    hasReview: jsonBool(j['has_review']),
+    pembayaranStatus: jsonString(
+      (j['pembayaran'] as Map<String, dynamic>?)?['status'],
+      fallback: 'unpaid',
+    ),
+    status: jsonString(j['status'], fallback: 'pending'),
   );
 }

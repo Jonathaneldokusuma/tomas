@@ -1,3 +1,5 @@
+import '../utils/json_value.dart';
+
 class Tukang {
   final int idTukang;
   final String nama;
@@ -30,18 +32,18 @@ class Tukang {
   });
 
   factory Tukang.fromJson(Map<String, dynamic> j) => Tukang(
-        idTukang: j['id_tukang'],
-        nama: j['nama'],
-        kategori: j['kategori'],
-        lokasi: j['lokasi'],
-        alamat: j['alamat'],
-        bio: j['bio'],
-        noHp: j['no_hp'],
-        tarif: j['tarif'] != null ? (j['tarif'] as num).toDouble() : null,
-        statusAktif: j['status_aktif'] == true || j['status_aktif'] == 1,
-        fotoUrl: j['foto_url'],
-        rating: (j['rating'] ?? 4.7).toDouble(),
-        latitude: j['latitude'] != null ? (j['latitude'] as num).toDouble() : null,
-        longitude: j['longitude'] != null ? (j['longitude'] as num).toDouble() : null,
-      );
+    idTukang: jsonInt(j['id_tukang']),
+    nama: jsonString(j['nama'], fallback: 'Tukang'),
+    kategori: jsonStringOrNull(j['kategori']),
+    lokasi: jsonStringOrNull(j['lokasi']),
+    alamat: jsonStringOrNull(j['alamat']),
+    bio: jsonStringOrNull(j['bio']),
+    noHp: jsonStringOrNull(j['no_hp']),
+    tarif: jsonDoubleOrNull(j['tarif']),
+    statusAktif: jsonBool(j['status_aktif']),
+    fotoUrl: jsonStringOrNull(j['foto_url']),
+    rating: jsonDouble(j['rating'], fallback: 4.7),
+    latitude: jsonDoubleOrNull(j['latitude']),
+    longitude: jsonDoubleOrNull(j['longitude']),
+  );
 }
