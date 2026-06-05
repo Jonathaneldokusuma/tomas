@@ -79,6 +79,15 @@
         <a href="{{ route('admin.support') }}" class="nav-item {{ request()->routeIs('admin.support*') ? 'active' : '' }}">
             <i class="fas fa-headset"></i><span>Support</span>
         </a>
+        <a href="{{ route('admin.support.user') }}" class="nav-item {{ request()->routeIs('admin.support.user*') ? 'active' : '' }}">
+            <i class="fas fa-comments"></i><span>User Support</span>
+        </a>
+        <a href="{{ route('admin.badges') }}" class="nav-item {{ request()->routeIs('admin.badges*') ? 'active' : '' }}">
+            <i class="fas fa-award"></i><span>Badges</span>
+        </a>
+        <a href="{{ route('admin.fcm') }}" class="nav-item {{ request()->routeIs('admin.fcm*') ? 'active' : '' }}">
+            <i class="fas fa-bell"></i><span>Firebase Push</span>
+        </a>
     </nav>
 
     {{-- Bottom --}}

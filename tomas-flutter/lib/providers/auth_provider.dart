@@ -14,11 +14,11 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) return;
-    try {
-      _user = await ApiService.me();
-      notifyListeners();
-    } catch (_) {
+    final ok = await refreshUser();
+    if (!ok) {
       await prefs.remove('token');
+      _user = null;
+      notifyListeners();
     }
   }
 
@@ -30,6 +30,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', res['token']);
       _user = res['user'] as Map<String, dynamic>;
+      await refreshUser();
     } finally {
       _loading = false;
       notifyListeners();
@@ -44,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', res['token']);
       _user = res['user'] as Map<String, dynamic>;
+      await refreshUser();
     } finally {
       _loading = false;
       notifyListeners();
@@ -63,5 +65,15 @@ class AuthProvider extends ChangeNotifier {
   Future<void> updateUser(Map<String, dynamic> updated) async {
     _user = updated;
     notifyListeners();
+  }
+
+  Future<bool> refreshUser() async {
+    try {
+      _user = await ApiService.me();
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

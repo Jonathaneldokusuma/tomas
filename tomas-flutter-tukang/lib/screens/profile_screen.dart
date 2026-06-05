@@ -78,9 +78,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .where((item) => item.trim().isNotEmpty)
           .toList();
 
+      final availableCategories = categories.isNotEmpty
+          ? categories
+          : List<String>.from(TukangService.defaultCategories);
+
       final currentKategori = jsonStringOrNull(tukang['kategori']) ?? '';
-      if (currentKategori.isNotEmpty && !categories.contains(currentKategori)) {
-        categories.insert(0, currentKategori);
+      if (currentKategori.isNotEmpty &&
+          !availableCategories.contains(currentKategori)) {
+        availableCategories.insert(0, currentKategori);
       }
 
       setState(() {
@@ -88,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _stats = stats;
         _badges = badges;
         _portfolio = portfolio;
-        _categories = categories;
+        _categories = availableCategories;
         _namaCtrl.text = jsonString(tukang['nama']);
         _noHpCtrl.text = jsonString(tukang['no_hp']);
         _bioCtrl.text = jsonString(tukang['bio']);
@@ -96,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tarifCtrl.text = jsonDouble(tukang['tarif']).toStringAsFixed(0);
         _selectedKategori = currentKategori.isNotEmpty
             ? currentKategori
-            : (categories.isNotEmpty ? categories.first : null);
+            : availableCategories.first;
         _statusAktif = jsonBool(tukang['status_aktif']);
         _loading = false;
       });
@@ -459,6 +464,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _quickActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quickActionsSection() {
+    final rank = jsonInt(_stats['rank']);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(
+            title: 'Akses Cepat',
+            subtitle: 'Langsung ke fitur yang paling sering dipakai.',
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _quickActionCard(
+                  title: 'Portofolio',
+                  subtitle: '${_portfolio.length} item karya tersimpan',
+                  icon: Icons.add_photo_alternate_outlined,
+                  color: const Color(0xFF2563EB),
+                  onTap: _openPortfolioEditor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _quickActionCard(
+                  title: 'Pusat Bantuan',
+                  subtitle: 'Lapor bug atau hal ganjal',
+                  icon: Icons.headset_mic_outlined,
+                  color: const Color(0xFF0EA5E9),
+                  onTap: _openSupportCenter,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events_rounded, color: Color(0xFFB45309)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    rank > 0
+                        ? 'Emblem aktif: #$rank Tukang | ${_badges.length} badge didapat'
+                        : 'Emblem akan tampil setelah order, rating, dan portofolio bertambah',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF92400E),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildField(
     String label,
     TextEditingController controller,
@@ -654,6 +785,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final description = badge['description']?.toString() ?? '';
     final color = _badgeColor(badge['color']?.toString());
     final icon = _badgeIcon(badge['key']?.toString() ?? '');
+    final imageUrl = badge['image_url']?.toString();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -665,7 +797,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 18),
+          if (imageUrl != null && imageUrl.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                imageUrl,
+                width: 22,
+                height: 22,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 18),
+              ),
+            )
+          else
+            Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,106 +910,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 14),
-          if (_categories.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Kategori Pekerjaan',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Color(0xFF374151),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Kategori Pekerjaan',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: Color(0xFF374151),
+                ),
+              ),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: _selectedKategori,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.work_outline, color: _kBlue, size: 18),
+                  filled: true,
+                  fillColor: _editing ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _kBlue),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 12,
                   ),
                 ),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: _selectedKategori,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.work_outline, color: _kBlue, size: 18),
-                    filled: true,
-                    fillColor: _editing ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _kBlue),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 12,
-                    ),
-                  ),
-                  items: _categories
-                      .map(
-                        (item) => DropdownMenuItem<String>(
-                          value: item,
-                          child: Text(item),
+                items: _categories
+                    .map(
+                      (item) => DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(
+                          item,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )
-                      .toList(),
-                  onChanged: _editing
-                      ? (value) {
-                          setState(() => _selectedKategori = value);
-                        }
-                      : null,
-                ),
-              ],
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Kategori Pekerjaan',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _kategoriCtrl,
-                  enabled: _editing,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.work_outline, color: _kBlue, size: 18),
-                    filled: true,
-                    fillColor: _editing ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    disabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _kBlue),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _editing
+                    ? (value) {
+                        setState(() => _selectedKategori = value);
+                      }
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _editing
+                    ? 'Pilih kategori dari daftar yang tersedia.'
+                    : 'Kategori ini tampil di profil dan hasil pencarian pelanggan.',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
           _buildField(
             'Tarif per Jam (Rp)',
@@ -1296,6 +1406,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _headerCard(),
                     const SizedBox(height: 16),
                     _statusCard(),
+                    const SizedBox(height: 16),
+                    _quickActionsSection(),
                     const SizedBox(height: 16),
                     _profileCard(),
                     const SizedBox(height: 16),

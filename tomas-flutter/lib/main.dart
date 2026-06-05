@@ -67,7 +67,7 @@ class _SplashState extends State<_Splash> {
 
     // Kirim FCM token ke server jika sudah login
     if (loggedIn) {
-      NotificationService.saveFcmTokenToServer();
+      await NotificationService.saveFcmTokenToServer();
     }
 
     Navigator.pushReplacement(

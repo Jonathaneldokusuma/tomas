@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _passCtrl.text,
       );
       // Kirim FCM token ke server setelah login
-      NotificationService.saveFcmTokenToServer();
+      await NotificationService.saveFcmTokenToServer();
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,

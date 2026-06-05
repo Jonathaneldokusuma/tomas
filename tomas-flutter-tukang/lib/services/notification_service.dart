@@ -1,20 +1,96 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'tukang_service.dart';
+
+const _channelId = 'tomas_notifications';
+const _channelName = 'Tomas Tukang Notifications';
+
+String _remoteTitle(RemoteMessage message) {
+  final title = message.notification?.title;
+  if (title != null && title.trim().isNotEmpty) return title;
+
+  for (final key in ['title', 'judul']) {
+    final value = message.data[key]?.toString();
+    if (value != null && value.trim().isNotEmpty) return value;
+  }
+
+  return 'Notifikasi';
+}
+
+String _remoteBody(RemoteMessage message) {
+  final body = message.notification?.body;
+  if (body != null && body.trim().isNotEmpty) return body;
+
+  for (final key in ['body', 'pesan']) {
+    final value = message.data[key]?.toString();
+    if (value != null && value.trim().isNotEmpty) return value;
+  }
+
+  return '';
+}
+
+Future<void> _showRemoteMessageNotification(
+  RemoteMessage message, {
+  FlutterLocalNotificationsPlugin? plugin,
+}) async {
+  final local = plugin ?? FlutterLocalNotificationsPlugin();
+
+  if (plugin == null) {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    await local.initialize(const InitializationSettings(
+      android: android,
+      iOS: ios,
+    ));
+  }
+
+  const channel = AndroidNotificationChannel(
+    _channelId,
+    _channelName,
+    importance: Importance.high,
+    playSound: true,
+    enableVibration: true,
+  );
+
+  await local
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
+
+  await local.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    _remoteTitle(message),
+    _remoteBody(message),
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: const DarwinNotificationDetails(),
+    ),
+  );
+}
 
 /// Handle FCM background messages (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background messages handled silently
+  await Firebase.initializeApp();
+  await _showRemoteMessageNotification(message);
 }
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
-
-  static const _channelId = 'tomas_notifications';
-  static const _channelName = 'Tomas Tukang Notifications';
 
   static Future<void> init() async {
     // --- Local notifications setup ---
@@ -58,14 +134,7 @@ class NotificationService {
 
     // Foreground messages → tampilkan local notification
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notification = message.notification;
-      if (notification != null) {
-        showLocalNotification(
-          title: notification.title ?? 'Notifikasi',
-          body: notification.body ?? '',
-          payload: message.data['type'],
-        );
-      }
+      _showRemoteMessageNotification(message, plugin: _local);
     });
 
     FirebaseMessaging.instance.onTokenRefresh.listen((_) {

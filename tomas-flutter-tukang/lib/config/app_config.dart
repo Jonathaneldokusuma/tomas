@@ -1,5 +1,6 @@
 class AppConfig {
-  static const String _defaultServerUrl = 'http://127.0.0.1:8000';
+  static const String _defaultServerUrl =
+      'https://tomas-production.up.railway.app';
 
   /// Base URL server backend (tanpa trailing slash, tanpa /api).
   ///

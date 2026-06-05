@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\FavoritController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\PembayaranController;
 use App\Http\Controllers\Api\NotifikasiController;
@@ -78,6 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chat',             [ChatController::class, 'index']);
     Route::get('/chat/{id_tukang}', [ChatController::class, 'show']);
     Route::post('/chat/{id_tukang}',[ChatController::class, 'send']);
+
+    Route::get('/support',          [SupportController::class, 'index']);
+    Route::post('/support',         [SupportController::class, 'store']);
 
     Route::post('/pembayaran/{id_order}/pay',   [PembayaranController::class, 'pay']);
     Route::get('/pembayaran/{id_order}/status', [PembayaranController::class, 'status']);

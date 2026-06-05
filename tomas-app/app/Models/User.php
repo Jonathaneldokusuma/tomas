@@ -20,4 +20,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class, 'id_user', 'id_user');
     }
+
+    public function badges()
+    {
+        return $this->hasMany(BadgeAward::class, 'target_id', 'id_user')
+            ->where('target_type', 'user');
+    }
+
+    public function supportChats()
+    {
+        return $this->hasMany(UserSupportChat::class, 'id_user', 'id_user');
+    }
 }

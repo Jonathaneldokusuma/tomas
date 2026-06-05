@@ -7,6 +7,16 @@ import '../utils/json_value.dart';
 class TukangService {
   static final String baseUrl = AppConfig.apiBaseUrl;
   static const Duration _networkTimeout = Duration(seconds: 15);
+  static const List<String> defaultCategories = [
+    'Servis AC',
+    'Instalasi Listrik',
+    'Perbaikan Pipa & Plumbing',
+    'Pengecatan Rumah',
+    'Perbaikan Atap',
+    'Bersih-Bersih Rumah',
+    'Perbaikan Pintu & Jendela',
+    'Taman & Lanskap',
+  ];
 
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -180,23 +190,31 @@ class TukangService {
   }
 
   static Future<List<String>> getAvailableCategories() async {
-    final res = await http
-        .get(Uri.parse('$baseUrl/layanan'), headers: await _headers())
-        .timeout(_networkTimeout);
-    final data = jsonDecode(res.body);
-    final items = data is List ? data : (data['data'] as List? ?? []);
-    return items
-        .map((item) {
-          if (item is Map<String, dynamic>) {
-            return item['nama_layanan']?.toString() ?? '';
-          }
-          if (item is Map) {
-            return item['nama_layanan']?.toString() ?? '';
-          }
-          return item.toString();
-        })
-        .where((item) => item.trim().isNotEmpty)
-        .toList();
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/layanan'), headers: await _headers())
+          .timeout(_networkTimeout);
+      final data = jsonDecode(res.body);
+      final items = data is List ? data : (data['data'] as List? ?? []);
+      final categories = items
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              return item['nama_layanan']?.toString() ?? '';
+            }
+            if (item is Map) {
+              return item['nama_layanan']?.toString() ?? '';
+            }
+            return item.toString();
+          })
+          .where((item) => item.trim().isNotEmpty)
+          .toList();
+
+      return categories.isNotEmpty
+          ? categories
+          : List<String>.from(defaultCategories);
+    } catch (_) {
+      return List<String>.from(defaultCategories);
+    }
   }
 
   static Future<Map<String, dynamic>> addPortfolio({

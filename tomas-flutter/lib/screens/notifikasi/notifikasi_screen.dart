@@ -57,6 +57,10 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
         return Icons.receipt_long;
       case 'chat':
         return Icons.chat_bubble;
+      case 'support':
+        return Icons.headset_mic_outlined;
+      case 'badge':
+        return Icons.verified_rounded;
       default:
         return Icons.notifications;
     }
@@ -68,6 +72,10 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
         return Colors.green;
       case 'chat':
         return Colors.blue;
+      case 'support':
+        return Colors.purple;
+      case 'badge':
+        return Colors.amber;
       default:
         return Colors.orange;
     }

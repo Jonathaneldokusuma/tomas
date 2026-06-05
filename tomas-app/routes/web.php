@@ -8,6 +8,9 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\FavoritController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\FcmController;
+use App\Http\Controllers\Admin\BadgeController;
+use App\Http\Controllers\Admin\UserSupportController;
 
 // Redirect root ke admin login
 Route::get('/', fn() => redirect()->route('admin.login'));
@@ -99,6 +102,21 @@ Route::prefix('admin')->middleware('admin')->group(function () {
     // Support center tukang
     Route::get('/support',                  [AdminController::class, 'support'])->name('admin.support');
     Route::post('/support/{id_tukang}',     [AdminController::class, 'replySupport'])->name('admin.support.reply');
+
+    // Support center user
+    Route::get('/support-user',             [UserSupportController::class, 'index'])->name('admin.support.user');
+    Route::post('/support-user/{id_user}',  [UserSupportController::class, 'reply'])->name('admin.support.user.reply');
+
+    // Badge custom
+    Route::get('/badges',                   [BadgeController::class, 'index'])->name('admin.badges');
+    Route::post('/badges',                  [BadgeController::class, 'store'])->name('admin.badges.store');
+    Route::delete('/badges/{id}',           [BadgeController::class, 'destroy'])->name('admin.badges.delete');
+
+    // Firebase push notification
+    Route::get('/fcm',                      [FcmController::class, 'index'])->name('admin.fcm');
+    Route::post('/fcm',                     [FcmController::class, 'store'])->name('admin.fcm.store');
+    Route::post('/fcm/test',                [FcmController::class, 'test'])->name('admin.fcm.test');
+    Route::delete('/fcm',                   [FcmController::class, 'destroy'])->name('admin.fcm.delete');
 
     // Broadcast pesan ke tukang
     Route::get('/broadcast',                [AdminController::class, 'broadcast'])->name('admin.broadcast');

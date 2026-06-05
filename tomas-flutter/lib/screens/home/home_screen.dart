@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -26,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _tabIndex;
+  final GlobalKey<_HomeTabState> _homeTabKey = GlobalKey<_HomeTabState>();
 
   @override
   void initState() {
@@ -37,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // index 2 is the FAB "Tambah" — it's not a real page
     final pages = [
-      const _HomeTab(),
+      _HomeTab(key: _homeTabKey),
       const ChatListScreen(),
       const SizedBox(), // placeholder for Tambah (FAB)
       const OrderListScreen(),
@@ -59,6 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const TukangListScreen()),
             );
+          } else if (i == 0) {
+            _homeTabKey.currentState?.refresh(silent: true);
+            setState(() => _tabIndex = i);
+          } else if (i == 4) {
+            context.read<AuthProvider>().refreshUser();
+            setState(() => _tabIndex = i);
           } else {
             setState(() => _tabIndex = i);
           }
@@ -219,48 +228,73 @@ class _NavItem extends StatelessWidget {
 
 // ── Home Tab ─────────────────────────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  const _HomeTab({super.key});
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<_HomeTab> {
+class _HomeTabState extends State<_HomeTab> with WidgetsBindingObserver {
   List<dynamic> _layananList = [];
   List<dynamic> _byLayanan = [];
   bool _loading = true;
   int _unreadCount = 0;
   final _searchCtrl = TextEditingController();
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (!mounted || _loading) return;
+      _load(silent: true);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load(silent: true);
+    }
+  }
+
+  Future<void> refresh({bool silent = true}) => _load(silent: silent);
+
+  Future<void> _load({bool silent = false}) async {
     try {
+      if (!silent && mounted) {
+        setState(() => _loading = true);
+      }
+
       final layanan = await ApiService.getLayanan();
-      if (!mounted) return;
-      setState(() => _layananList = layanan);
-
       final byLayanan = await ApiService.getTukangByLayanan();
-      if (!mounted) return;
-      setState(() => _byLayanan = byLayanan);
-
       final unread = await ApiService.getUnreadCount();
+
       if (!mounted) return;
       setState(() {
+        _layananList = layanan;
+        _byLayanan = byLayanan;
         _unreadCount = unread;
-        _loading = false;
+        if (!silent) {
+          _loading = false;
+        }
       });
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && !silent) setState(() => _loading = false);
     }
   }
 
@@ -982,29 +1016,56 @@ class TukangListScreen extends StatefulWidget {
   State<TukangListScreen> createState() => _TukangListScreenState();
 }
 
-class _TukangListScreenState extends State<TukangListScreen> {
+class _TukangListScreenState extends State<TukangListScreen>
+    with WidgetsBindingObserver {
   List<Tukang> _all = [];
   List<Tukang> _shown = [];
   List<String> _cats = [];
   String? _activeCat;
   bool _loading = true;
   final _searchCtrl = TextEditingController();
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _activeCat = widget.layanan;
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (!mounted || _loading) return;
+      _load(silent: true);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load(silent: true);
+    }
+  }
+
+  Future<void> refresh({bool silent = true}) => _load(silent: silent);
+
+  Future<void> _load({bool silent = false}) async {
     try {
+      if (!silent && mounted) {
+        setState(() => _loading = true);
+      }
+
       final data = await ApiService.getTukang(q: widget.query);
       if (!mounted) return;
       final list = data
@@ -1020,11 +1081,13 @@ class _TukangListScreenState extends State<TukangListScreen> {
       setState(() {
         _all = list;
         _cats = cats;
-        _loading = false;
         _filter();
+        if (!silent) {
+          _loading = false;
+        }
       });
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && !silent) setState(() => _loading = false);
     }
   }
 

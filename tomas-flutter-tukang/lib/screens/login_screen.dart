@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       if (res['statusCode'] == 200) {
         // Kirim FCM token ke server setelah login
-        NotificationService.saveFcmTokenToServer();
+        await NotificationService.saveFcmTokenToServer();
         Navigator.pushReplacementNamed(context, '/dashboard');
       } else if (res['statusCode'] == 403) {
         Navigator.pushReplacementNamed(context, '/waiting-verification');

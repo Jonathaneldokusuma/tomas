@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     debugPrint('TOMAS_TUKANG_BOOT: splash token=${token?.isNotEmpty == true}');
     if (token != null && token.isNotEmpty) {
       // Refresh FCM token di server saat auto-login
-      NotificationService.saveFcmTokenToServer();
+      await NotificationService.saveFcmTokenToServer();
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
       Navigator.pushReplacementNamed(context, '/login');

@@ -22,6 +22,7 @@ class AuthController extends Controller
             'no_hp'    => $request->no_hp,
             'password' => Hash::make($request->password),
         ]);
+        $user->load('badges');
 
         $token = $user->createToken('tomas-app')->plainTextToken;
 
@@ -43,6 +44,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'No HP atau password salah.'], 401);
         }
+        $user->load('badges');
 
         $token = $user->createToken('tomas-app')->plainTextToken;
 
@@ -60,7 +62,7 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json($request->user()->load('badges'));
     }
 
     public function updateProfile(Request $request)
@@ -82,6 +84,6 @@ class AuthController extends Controller
 
         $user->update($data);
 
-        return response()->json($user->fresh());
+        return response()->json($user->fresh()->load('badges'));
     }
 }

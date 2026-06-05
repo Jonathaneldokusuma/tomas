@@ -221,6 +221,28 @@ class ApiService {
     return _parse(res);
   }
 
+  // ── Support Center ──────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> getSupportMessages() async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/support'),
+      headers: await _headers(auth: true),
+    );
+    return _parse(res);
+  }
+
+  static Future<Map<String, dynamic>> sendSupportMessage(
+    String kategori,
+    String pesan,
+  ) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/support'),
+      headers: await _headers(auth: true),
+      body: jsonEncode({'kategori': kategori, 'pesan': pesan}),
+    );
+    return _parse(res);
+  }
+
   // ── Pembayaran ───────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> bayar(

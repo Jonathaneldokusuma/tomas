@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Portfolio;
+use App\Models\BadgeAward;
 use App\Models\Review;
 use App\Models\SupportChat;
 use App\Models\Layanan;
@@ -498,12 +499,48 @@ class TukangDashboardController extends Controller
                 'avg_rating' => $averageRating,
                 'rank' => $rank,
             ],
-            'badges' => $this->buildBadges($tukang, $completedOrders, $reviews->count(), $averageRating, $portfolioItems->count(), $rank),
+            'badges' => array_values(array_merge(
+                $this->buildBadges($tukang, $completedOrders, $reviews->count(), $averageRating, $portfolioItems->count(), $rank),
+                $this->customBadges('tukang', $tukang->id_tukang)
+            )),
             'portfolio' => $portfolioItems->map(fn ($item) => $this->formatPortfolio($item))->values(),
-            'categories' => Layanan::orderBy('nama_layanan')
-                ->pluck('nama_layanan')
-                ->filter()
-                ->values(),
+            'categories' => $this->categoryOptions(),
+        ];
+    }
+
+    private function customBadges(string $targetType, int $targetId): array
+    {
+        return BadgeAward::forTarget($targetType, $targetId)
+            ->map(fn (BadgeAward $badge) => $badge->toPayload())
+            ->values()
+            ->all();
+    }
+
+    private function categoryOptions()
+    {
+        $categories = Layanan::orderBy('nama_layanan')
+            ->pluck('nama_layanan')
+            ->filter()
+            ->values();
+
+        if ($categories->isEmpty()) {
+            return collect($this->defaultCategories());
+        }
+
+        return $categories;
+    }
+
+    private function defaultCategories(): array
+    {
+        return [
+            'Servis AC',
+            'Instalasi Listrik',
+            'Perbaikan Pipa & Plumbing',
+            'Pengecatan Rumah',
+            'Perbaikan Atap',
+            'Bersih-Bersih Rumah',
+            'Perbaikan Pintu & Jendela',
+            'Taman & Lanskap',
         ];
     }
 

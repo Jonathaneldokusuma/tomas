@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\SystemSetting;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -19,13 +21,14 @@ use Illuminate\Support\Facades\Log;
 class FcmService
 {
     private static ?string $accessToken = null;
+    private static ?string $projectId = null;
 
     /**
      * Send a notification to a single FCM token.
      */
     public static function send(string $fcmToken, string $title, string $body, array $data = []): bool
     {
-        $projectId = env('FCM_PROJECT_ID');
+        $projectId = self::resolveProjectId();
         if (!$projectId || !$fcmToken) return false;
 
         $token = self::getAccessToken();
@@ -85,19 +88,13 @@ class FcmService
     {
         if (self::$accessToken) return self::$accessToken;
 
-        $credPath = env('GOOGLE_APPLICATION_CREDENTIALS');
-        if (!$credPath) {
-            // Try default path
-            $credPath = storage_path('firebase-service-account.json');
-        }
-
-        if (!file_exists($credPath)) {
+        $creds = self::loadCredentials();
+        if (!$creds) {
             Log::info('FCM: No service account file found, notifications skipped.');
             return null;
         }
 
         try {
-            $creds = json_decode(file_get_contents($credPath), true);
             $jwt   = self::buildJwt($creds);
 
             $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
@@ -116,6 +113,58 @@ class FcmService
             Log::error('FCM: Access token exception: ' . $e->getMessage());
             return null;
         }
+    }
+
+    private static function resolveProjectId(): ?string
+    {
+        if (self::$projectId !== null) {
+            return self::$projectId;
+        }
+
+        $projectId = env('FCM_PROJECT_ID');
+        if ($projectId) {
+            self::$projectId = $projectId;
+            return self::$projectId;
+        }
+
+        $creds = self::loadCredentials();
+        self::$projectId = $creds['project_id'] ?? null;
+
+        return self::$projectId;
+    }
+
+    private static function loadCredentials(): ?array
+    {
+        try {
+            $stored = SystemSetting::where('setting_key', 'firebase_service_account_json')->value('setting_value');
+            if (is_string($stored) && $stored !== '') {
+                $json = json_decode(Crypt::decryptString($stored), true);
+                if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                    return $json;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::debug('FCM: failed to load service account from DB', ['error' => $e->getMessage()]);
+        }
+
+        $paths = array_filter([
+            env('GOOGLE_APPLICATION_CREDENTIALS'),
+            storage_path('firebase-service-account.json'),
+            storage_path('app/firebase-service-account.json'),
+        ]);
+
+        foreach ($paths as $path) {
+            if (!is_string($path) || !file_exists($path)) {
+                continue;
+            }
+
+            $json = json_decode(file_get_contents($path), true);
+            if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                return $json;
+            }
+        }
+
+        return null;
     }
 
     /**

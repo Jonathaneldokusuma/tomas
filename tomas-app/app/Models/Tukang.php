@@ -40,6 +40,12 @@ class Tukang extends Model
         return $this->hasMany(Portfolio::class, 'id_tukang', 'id_tukang');
     }
 
+    public function badges()
+    {
+        return $this->hasMany(BadgeAward::class, 'target_id', 'id_tukang')
+            ->where('target_type', 'tukang');
+    }
+
     public function supportChats()
     {
         return $this->hasMany(SupportChat::class, 'id_tukang', 'id_tukang');
