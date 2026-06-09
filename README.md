@@ -1,34 +1,42 @@
 # TOMAS
 
-Download APK Android:
+TOMAS adalah aplikasi pemesanan jasa tukang dengan tiga bagian utama: backend Laravel untuk admin dan API, aplikasi Android untuk pengguna, dan aplikasi Android untuk tukang.
 
-- [APK User](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-user-release.apk)
-- [APK Tukang](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-tukang-release.apk)
+## Download APK
 
-## File Release
+Versi Android terbaru bisa diunduh dari GitHub Releases:
 
-Agar link download GitHub langsung bisa diklik, upload file APK dengan nama berikut ke GitHub Releases:
+- [Download TOMAS User](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-user-release.apk)
+- [Download TOMAS Tukang](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-tukang-release.apk)
+
+Kalau dibuka dari HP, tekan salah satu link di atas, tunggu file APK selesai diunduh, lalu pilih **Install**.
+
+## Isi Project
+
+- `tomas-app` berisi backend Laravel, API, dan dashboard admin.
+- `tomas-flutter` berisi aplikasi Android untuk pengguna.
+- `tomas-flutter-tukang` berisi aplikasi Android untuk tukang.
+
+## Release Android
+
+APK dibuat otomatis lewat GitHub Actions setiap kali tag versi baru dipush.
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Workflow release ada di `.github/workflows/release-apk.yml`. File yang dihasilkan akan muncul di halaman Releases dengan nama:
 
 - `tomas-user-release.apk`
 - `tomas-tukang-release.apk`
 
-## Cara Publish Release
+## Backend
 
-1. Push tag versi, misalnya:
+Backend production yang dipakai aplikasi Android:
 
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+```text
+https://tomas-production.up.railway.app
+```
 
-2. GitHub Actions akan build kedua APK.
-3. GitHub Release akan otomatis dibuat dan file bisa langsung diunduh.
-4. Kalau mau manual, buka tab **Releases** lalu upload:
-   - `tomas-user-release.apk`
-   - `tomas-tukang-release.apk`
-
-## Catatan
-
-- Kalau memakai nama file lain, ubah link di atas supaya sesuai.
-- Link `.../releases/latest/download/...` akan selalu mengarah ke release terbaru.
-- Workflow GitHub Actions ada di `.github/workflows/release-apk.yml`.
+Jika URL backend berubah, sesuaikan nilai `TOMAS_SERVER_URL` pada workflow release sebelum membuat tag baru.
