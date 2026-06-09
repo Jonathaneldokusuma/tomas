@@ -22,7 +22,7 @@ class UserController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:100',
-            'no_hp' => 'required|string|max:15',
+            'no_hp' => 'required|digits_between:8,15',
         ]);
         $user = User::create($request->only('nama', 'no_hp'));
         return response()->json($user, 201);
@@ -39,7 +39,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $request->validate([
             'nama' => 'sometimes|string|max:100',
-            'no_hp' => 'sometimes|string|max:15',
+            'no_hp' => 'sometimes|digits_between:8,15',
         ]);
         $user->update($request->only('nama', 'no_hp'));
         return response()->json($user);

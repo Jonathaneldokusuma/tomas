@@ -79,7 +79,13 @@ class TukangService {
           body: jsonEncode(body),
         )
         .timeout(_networkTimeout);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 200 &&
+        res.statusCode < 300 &&
+        data['token'] != null) {
+      await _persistSession(data);
+    }
+    return {'statusCode': res.statusCode, ...data};
   }
 
   static Future<Map<String, dynamic>> login({
@@ -98,13 +104,21 @@ class TukangService {
         .timeout(_networkTimeout);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200 && data['token'] != null) {
-      final prefs = await SharedPreferences.getInstance();
-      final tukang = data['tukang'] as Map<String, dynamic>? ?? {};
-      await prefs.setString('tukang_token', jsonString(data['token']));
-      await prefs.setString('tukang_nama', jsonString(tukang['nama']));
-      await prefs.setInt('tukang_id', jsonInt(tukang['id_tukang']));
+      await _persistSession(data);
     }
     return {'statusCode': res.statusCode, ...data};
+  }
+
+  static Future<void> _persistSession(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final tukang = data['tukang'] as Map<String, dynamic>? ?? {};
+    await prefs.setString('tukang_token', jsonString(data['token']));
+    await prefs.setString('tukang_nama', jsonString(tukang['nama']));
+    await prefs.setInt('tukang_id', jsonInt(tukang['id_tukang']));
+    await prefs.setString(
+      'tukang_status_verifikasi',
+      jsonString(tukang['status_verifikasi']),
+    );
   }
 
   static Future<void> logout() async {
@@ -112,6 +126,7 @@ class TukangService {
     await prefs.remove('tukang_token');
     await prefs.remove('tukang_nama');
     await prefs.remove('tukang_id');
+    await prefs.remove('tukang_status_verifikasi');
   }
 
   static Future<Map<String, dynamic>> getOrders() async {
@@ -233,9 +248,7 @@ class TukangService {
     if (deskripsi != null && deskripsi.trim().isNotEmpty) {
       request.fields['deskripsi'] = deskripsi.trim();
     }
-    request.files.add(
-      await http.MultipartFile.fromPath('media', mediaPath),
-    );
+    request.files.add(await http.MultipartFile.fromPath('media', mediaPath));
 
     final streamed = await request.send().timeout(_networkTimeout);
     final res = await http.Response.fromStream(streamed);

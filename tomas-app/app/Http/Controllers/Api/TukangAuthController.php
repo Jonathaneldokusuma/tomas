@@ -15,8 +15,8 @@ class TukangAuthController extends Controller
         $validator = Validator::make($request->all(), [
             'nama'     => 'required|string|max:100',
             'username' => 'required|string|max:50|unique:tukang,username',
-            'no_hp'    => 'required|string|max:20|unique:tukang,no_hp',
-            'no_ktp'   => 'nullable|string|max:20',
+            'no_hp'    => 'required|digits_between:8,15|unique:tukang,no_hp',
+            'no_ktp'   => 'nullable|digits:16',
             'alamat'   => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude'=> 'nullable|numeric',
@@ -41,6 +41,7 @@ class TukangAuthController extends Controller
 
         return response()->json([
             'tukang' => $tukang,
+            'token' => base64_encode($tukang->username . '|tukang'),
             'message' => 'Pendaftaran berhasil, menunggu verifikasi admin.'
         ], 201);
     }

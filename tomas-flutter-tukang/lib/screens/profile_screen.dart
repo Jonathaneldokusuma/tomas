@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/tukang_service.dart';
@@ -141,11 +142,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _deletePortfolioItem(int id) async {
     final messenger = ScaffoldMessenger.of(context);
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Hapus portofolio?'),
-            content: const Text('Item portofolio ini akan dihapus dari profil publik.'),
+            content: const Text(
+              'Item portofolio ini akan dihapus dari profil publik.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -236,11 +240,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 6),
                       Text(
                         'Upload foto hasil kerja supaya profil kamu terlihat lebih meyakinkan.',
-                        style: TextStyle(color: Colors.grey.shade600, height: 1.4),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       GestureDetector(
-                        onTap: uploading ? null : () => pickImage(setModalState),
+                        onTap: uploading
+                            ? null
+                            : () => pickImage(setModalState),
                         child: Container(
                           height: 180,
                           width: double.infinity,
@@ -261,7 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                       'Pilih foto portofolio',
-                                      style: TextStyle(color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ],
                                 )
@@ -307,7 +318,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   if (pickedImage == null) {
                                     messenger.showSnackBar(
                                       const SnackBar(
-                                        content: Text('Pilih foto portofolio dulu.'),
+                                        content: Text(
+                                          'Pilih foto portofolio dulu.',
+                                        ),
                                       ),
                                     );
                                     return;
@@ -315,11 +328,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                   setModalState(() => uploading = true);
                                   try {
-                                    final res = await TukangService.addPortfolio(
-                                      judul: titleCtrl.text.trim(),
-                                      deskripsi: descCtrl.text.trim(),
-                                      mediaPath: pickedImage!.path,
-                                    );
+                                    final res =
+                                        await TukangService.addPortfolio(
+                                          judul: titleCtrl.text.trim(),
+                                          deskripsi: descCtrl.text.trim(),
+                                          mediaPath: pickedImage!.path,
+                                        );
 
                                     if (!mounted) return;
                                     if ((res['statusCode'] ?? 0) >= 200 &&
@@ -328,7 +342,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       messenger.showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            res['message'] ?? 'Portofolio ditambahkan',
+                                            res['message'] ??
+                                                'Portofolio ditambahkan',
                                           ),
                                         ),
                                       );
@@ -338,7 +353,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       messenger.showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            res['message'] ?? 'Gagal menambahkan portofolio',
+                                            res['message'] ??
+                                                'Gagal menambahkan portofolio',
                                           ),
                                         ),
                                       );
@@ -348,7 +364,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     setModalState(() => uploading = false);
                                     messenger.showSnackBar(
                                       const SnackBar(
-                                        content: Text('Gagal terhubung ke server'),
+                                        content: Text(
+                                          'Gagal terhubung ke server',
+                                        ),
                                       ),
                                     );
                                   }
@@ -363,7 +381,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 )
                               : const Icon(Icons.cloud_upload_outlined),
-                          label: Text(uploading ? 'Mengunggah...' : 'Simpan Portofolio'),
+                          label: Text(
+                            uploading ? 'Mengunggah...' : 'Simpan Portofolio',
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _kBlue,
                             foregroundColor: Colors.white,
@@ -498,7 +518,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 10),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -569,7 +592,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.emoji_events_rounded, color: Color(0xFFB45309)),
+                const Icon(
+                  Icons.emoji_events_rounded,
+                  color: Color(0xFFB45309),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -595,6 +621,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     TextEditingController controller,
     IconData icon, {
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     int maxLines = 1,
     Widget? suffix,
     String? hintText,
@@ -615,13 +642,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           controller: controller,
           enabled: _editing,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: Icon(icon, color: _kBlue, size: 18),
             suffixIcon: suffix,
             filled: true,
-            fillColor: _editing ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+            fillColor: _editing
+                ? const Color(0xFFF9FAFB)
+                : const Color(0xFFF3F4F6),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -662,12 +692,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
               ),
             ],
           ),
@@ -719,7 +756,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           )
                         : const Center(
-                            child: Icon(Icons.image_outlined, color: Colors.grey),
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: Colors.grey,
+                            ),
                           ),
                   ),
                 ),
@@ -805,7 +845,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 22,
                 height: 22,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 18),
+                errorBuilder: (_, __, ___) =>
+                    Icon(icon, color: color, size: 18),
               ),
             )
           else
@@ -826,7 +867,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (description.isNotEmpty)
                 Text(
                   description,
-                  style: TextStyle(color: color.withOpacity(0.82), fontSize: 10),
+                  style: TextStyle(
+                    color: color.withOpacity(0.82),
+                    fontSize: 10,
+                  ),
                 ),
             ],
           ),
@@ -908,6 +952,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _noHpCtrl,
             Icons.phone_outlined,
             keyboardType: TextInputType.phone,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           const SizedBox(height: 14),
           Column(
@@ -926,9 +971,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 value: _selectedKategori,
                 isExpanded: true,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.work_outline, color: _kBlue, size: 18),
+                  prefixIcon: const Icon(
+                    Icons.work_outline,
+                    color: _kBlue,
+                    size: 18,
+                  ),
                   filled: true,
-                  fillColor: _editing ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+                  fillColor: _editing
+                      ? const Color(0xFFF9FAFB)
+                      : const Color(0xFFF3F4F6),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -954,10 +1005,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .map(
                       (item) => DropdownMenuItem<String>(
                         value: item,
-                        child: Text(
-                          item,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(item, overflow: TextOverflow.ellipsis),
                       ),
                     )
                     .toList(),
@@ -982,6 +1030,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _tarifCtrl,
             Icons.attach_money,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           const SizedBox(height: 14),
           _buildField(
@@ -1040,7 +1089,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _sectionHeader(
             title: 'Portofolio',
-            subtitle: 'Tampilkan hasil kerja terbaik supaya pelanggan lebih percaya.',
+            subtitle:
+                'Tampilkan hasil kerja terbaik supaya pelanggan lebih percaya.',
             action: TextButton.icon(
               onPressed: _openPortfolioEditor,
               icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
@@ -1059,7 +1109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(Icons.photo_library_outlined, size: 44, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.photo_library_outlined,
+                    size: 44,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Belum ada portofolio',
@@ -1120,7 +1174,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? _badges.map(_badgeChip).toList()
                 : [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(14),
@@ -1128,10 +1185,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Text(
                         'Belum ada badge. Kerjakan pesanan, kumpulkan ulasan, dan isi portofolio untuk naik peringkat.',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
           ),
           if (rank > 0) ...[
             const SizedBox(height: 12),
@@ -1146,7 +1206,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.emoji_events_rounded, color: Color(0xFFB45309)),
+                  const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Color(0xFFB45309),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -1266,12 +1329,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '@$username',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                     if (rank > 0) ...[
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.16),
                           borderRadius: BorderRadius.circular(999),
@@ -1385,61 +1454,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _kBlue))
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _load,
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _load,
+                    child: const Text('Coba Lagi'),
                   ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    _headerCard(),
-                    const SizedBox(height: 16),
-                    _statusCard(),
-                    const SizedBox(height: 16),
-                    _quickActionsSection(),
-                    const SizedBox(height: 16),
-                    _profileCard(),
-                    const SizedBox(height: 16),
-                    _badgesSection(),
-                    const SizedBox(height: 16),
-                    _portfolioSection(),
-                    const SizedBox(height: 16),
-                    _supportSection(),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _logout,
-                        icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text(
-                          'Logout',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: Colors.red),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                ],
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                _headerCard(),
+                const SizedBox(height: 16),
+                _statusCard(),
+                const SizedBox(height: 16),
+                _quickActionsSection(),
+                const SizedBox(height: 16),
+                _profileCard(),
+                const SizedBox(height: 16),
+                _badgesSection(),
+                const SizedBox(height: 16),
+                _portfolioSection(),
+                const SizedBox(height: 16),
+                _supportSection(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
+              ],
+            ),
     );
   }
 }

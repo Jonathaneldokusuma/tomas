@@ -13,7 +13,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'nama'     => 'required|string|max:100',
-            'no_hp'    => 'required|string|max:15|unique:user,no_hp',
+            'no_hp'    => 'required|digits_between:8,15|unique:user,no_hp',
             'password' => 'required|string|min:6',
         ]);
 
@@ -35,7 +35,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'no_hp'    => 'required|string',
+            'no_hp'    => 'required|digits_between:8,15',
             'password' => 'required|string',
         ]);
 
@@ -71,7 +71,7 @@ class AuthController extends Controller
 
         $request->validate([
             'nama'             => 'sometimes|string|max:100',
-            'no_hp'            => 'sometimes|string|max:15|unique:user,no_hp,' . $user->id_user . ',id_user',
+            'no_hp'            => 'sometimes|digits_between:8,15|unique:user,no_hp,' . $user->id_user . ',id_user',
             'alamat'           => 'sometimes|nullable|string|max:255',
             'password'         => 'sometimes|string|min:6|confirmed',
         ]);

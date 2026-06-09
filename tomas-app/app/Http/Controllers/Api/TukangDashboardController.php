@@ -224,7 +224,7 @@ class TukangDashboardController extends Controller
         $validator = Validator::make($request->all(), [
             'nama'        => 'sometimes|string|max:100',
             'bio'         => 'sometimes|string',
-            'no_hp'       => 'sometimes|string|max:20',
+            'no_hp'       => 'sometimes|digits_between:8,15',
             'lokasi'      => 'sometimes|string|max:200',
             'kategori'    => 'sometimes|string|max:100',
             'tarif'       => 'sometimes|numeric|min:0',

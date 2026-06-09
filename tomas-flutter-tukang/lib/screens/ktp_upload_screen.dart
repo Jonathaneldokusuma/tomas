@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -79,6 +80,12 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('tukang_token') ?? '';
+      if (token.isEmpty) {
+        throw Exception(
+          'Sesi pendaftaran habis. Silakan daftar atau login ulang.',
+        );
+      }
+
       final req = http.MultipartRequest(
         'POST',
         Uri.parse('${AppConfig.apiBaseUrl}/tukang/upload-ktp'),
@@ -90,11 +97,42 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
       req.files.add(
         await http.MultipartFile.fromPath('foto_selfie', _selfieImage!.path),
       );
-      await req.send();
-    } catch (_) {}
-    setState(() => _loading = false);
-    if (mounted)
+
+      final streamed = await req.send();
+      final response = await http.Response.fromStream(streamed);
+      Map<String, dynamic> data = {};
+      if (response.body.isNotEmpty) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) data = decoded;
+      }
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message =
+            data['message']?.toString() ??
+            _firstValidationError(data['errors']) ??
+            'Upload KTP gagal. Coba lagi.';
+        throw Exception(message);
+      }
+
+      await prefs.setString('tukang_status_verifikasi', 'pending');
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/waiting-verification');
+    } catch (e) {
+      if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String? _firstValidationError(dynamic errors) {
+    if (errors is! Map || errors.isEmpty) return null;
+    final first = errors.values.first;
+    if (first is List && first.isNotEmpty) return first.first.toString();
+    return first?.toString();
   }
 
   @override

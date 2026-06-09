@@ -89,7 +89,8 @@
                 <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Tarif (Rp)</label>
                 <input type="number" name="tarif" value="{{ old('tarif', $tukang->tarif ?? '') }}"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-400"
-                    placeholder="Contoh: 150000" min="0">
+                    placeholder="Contoh: 150000" min="0" inputmode="numeric" pattern="[0-9]*"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                 @error('tarif')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 

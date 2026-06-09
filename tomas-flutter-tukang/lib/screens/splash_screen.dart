@@ -8,14 +8,18 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _ctrl.forward();
     _navigate();
@@ -25,11 +29,18 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final token = prefs.getString('tukang_token');
+    final statusVerifikasi = prefs.getString('tukang_status_verifikasi');
     debugPrint('TOMAS_TUKANG_BOOT: splash token=${token?.isNotEmpty == true}');
     if (token != null && token.isNotEmpty) {
+      if (statusVerifikasi != 'verified') {
+        Navigator.pushReplacementNamed(context, '/waiting-verification');
+        return;
+      }
       // Refresh FCM token di server saat auto-login
       await NotificationService.saveFcmTokenToServer();
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
@@ -37,7 +48,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,20 +72,48 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 90, height: 90,
+                  width: 90,
+                  height: 90,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
                   ),
-                  child: const Icon(Icons.construction, color: Colors.white, size: 50),
+                  child: const Icon(
+                    Icons.construction,
+                    color: Colors.white,
+                    size: 50,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                const Text('Tomas Tukang', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
+                const Text(
+                  'Tomas Tukang',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('Aplikasi Pekerja Profesional', style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8))),
+                Text(
+                  'Aplikasi Pekerja Profesional',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
                 const SizedBox(height: 48),
-                SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white.withOpacity(0.6), strokeWidth: 2)),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white.withOpacity(0.6),
+                    strokeWidth: 2,
+                  ),
+                ),
               ],
             ),
           ),

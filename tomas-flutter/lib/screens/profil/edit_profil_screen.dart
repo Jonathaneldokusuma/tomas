@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
@@ -45,6 +46,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
+    final auth = context.read<AuthProvider>();
     try {
       final updated = await ApiService.updateProfile(
         nama: _namaCtrl.text.trim(),
@@ -54,7 +56,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
         passwordConfirmation: _changePass ? _passConfirmCtrl.text : null,
       );
       if (!mounted) return;
-      await context.read<AuthProvider>().updateUser(updated);
+      await auth.updateUser(updated);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profil berhasil diperbarui'),
@@ -142,6 +145,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   label: 'No. HP',
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'No. HP tidak boleh kosong';
@@ -266,12 +270,14 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
     required String label,
     required IconData icon,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     int? maxLines,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       validator: validator,
       maxLines: maxLines ?? 1,
       minLines: 1,
