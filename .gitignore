@@ -4,3 +4,8 @@ google-services.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Local build artifacts
+build/
+.toolchains/
+*.log
