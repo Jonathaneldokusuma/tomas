@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1042170533722",
+    "project_id": "tomas-app-2e185",
+    "storage_bucket": "tomas-app-2e185.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1042170533722:android:6d982a6911343cfd7c4563",
+        "android_client_info": {
+          "package_name": "com.tomas.tomas_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuSHnxbmN8lgEtXTeNH_SeU0GQRqFUw50"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1042170533722:android:dc39f8b9ac2513d07c4563",
+        "android_client_info": {
+          "package_name": "com.tomas.tomas_flutter_tukang"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuSHnxbmN8lgEtXTeNH_SeU0GQRqFUw50"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
