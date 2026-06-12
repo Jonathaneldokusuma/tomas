@@ -7,7 +7,7 @@
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap">
     <div>
         <h1 style="font-size:22px;font-weight:800;color:#0d1b2e;line-height:1.2">Marketplace Admin</h1>
-        <p style="font-size:12px;color:#6b7280;margin-top:4px">Manage and audit all user accounts across the platform.</p>
+        <p style="font-size:12px;color:#6b7280;margin-top:4px">Kelola akun user, status ban, dan akses order dari satu panel backend.</p>
     </div>
 </div>
 
@@ -19,6 +19,7 @@
         ['label'=>'Active Users',      'val'=>\App\Models\User::where('is_banned',0)->count(), 'sub'=>'Bisa memakai app',    'ibg'=>'#f0fdf4','ic'=>'#16a34a','icon'=>'fa-user-check'],
         ['label'=>'Banned Users',      'val'=>\App\Models\User::where('is_banned',1)->count(), 'sub'=>'Akun dinonaktifkan',   'ibg'=>'#fff7ed','ic'=>'#ea580c','icon'=>'fa-user-slash'],
         ['label'=>'Total Orders',      'val'=>\App\Models\Order::count(),                          'sub'=>'Semua order',          'ibg'=>'#fdf4ff','ic'=>'#9333ea','icon'=>'fa-receipt'],
+        ['label'=>'Badge User',        'val'=>\App\Models\BadgeAward::where('target_type','user')->count(), 'sub'=>'Badge aktif user', 'ibg'=>'#eef2ff','ic'=>'#4f46e5','icon'=>'fa-award'],
     ];
     @endphp
     @foreach($uCards as $c)

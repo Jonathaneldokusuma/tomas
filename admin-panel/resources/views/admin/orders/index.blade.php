@@ -7,8 +7,15 @@
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap">
     <div>
         <h1 style="font-size:22px;font-weight:800;color:#0d1b2e;line-height:1.2">Order Management</h1>
-        <p style="font-size:12px;color:#6b7280;margin-top:4px">Track and manage all service orders across the platform.</p>
+        <p style="font-size:12px;color:#6b7280;margin-top:4px">Pantau order aktif, selesai, dan hapus data bermasalah dari backend.</p>
     </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Total Order</div><div style="font-size:22px;font-weight:800;color:#0d1b2e">{{ \App\Models\Order::count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Order Selesai</div><div style="font-size:22px;font-weight:800;color:#16a34a">{{ \App\Models\Order::where('status','done')->count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Order Aktif</div><div style="font-size:22px;font-weight:800;color:#2563eb">{{ \App\Models\Order::whereNotIn('status',['done','rejected'])->count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Menunggu Bayar</div><div style="font-size:22px;font-weight:800;color:#ea580c">{{ \App\Models\Order::where('status_payment','uploaded')->count() }}</div></div>
 </div>
 
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">

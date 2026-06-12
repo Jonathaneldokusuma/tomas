@@ -6,11 +6,17 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">
         <div>
             <h1 style="font-size:20px;font-weight:700;color:#1e293b">Support Center</h1>
-            <p style="color:#64748b;font-size:13px;margin-top:2px">Chat dua arah antara tukang dan customer service pusat</p>
+            <p style="color:#64748b;font-size:13px;margin-top:2px">Chat dua arah antara tukang dan customer service pusat.</p>
         </div>
         <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600">
             <i class="fas fa-circle-info" style="margin-right:6px"></i>Pesan dari tukang akan terkirim ke notifikasi FCM juga
         </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Thread Aktif</div><div style="font-size:22px;font-weight:800;color:#0d1b2e">{{ $threads->count() }}</div></div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Pesan Tukang</div><div style="font-size:22px;font-weight:800;color:#2563eb">{{ $threads->sum('from_tukang') }}</div></div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Balasan Admin</div><div style="font-size:22px;font-weight:800;color:#16a34a">{{ $threads->sum('from_admin') }}</div></div>
     </div>
 
     @if(session('success'))

@@ -6,7 +6,14 @@
 {{-- Header --}}
 <div style="margin-bottom:20px">
     <h1 style="font-size:22px;font-weight:800;color:#0d1b2e;line-height:1.2">Review Management</h1>
-    <p style="font-size:12px;color:#6b7280;margin-top:4px">Monitor and manage all user reviews across the platform.</p>
+    <p style="font-size:12px;color:#6b7280;margin-top:4px">Pantau ulasan untuk menjaga kualitas layanan dan reputasi tukang.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Total Review</div><div style="font-size:22px;font-weight:800;color:#0d1b2e">{{ \App\Models\Review::count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Rating 5</div><div style="font-size:22px;font-weight:800;color:#16a34a">{{ \App\Models\Review::where('rating',5)->count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Rating Rendah</div><div style="font-size:22px;font-weight:800;color:#ea580c">{{ \App\Models\Review::where('rating','<=',3)->count() }}</div></div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:#6b7280">Rata-rata</div><div style="font-size:22px;font-weight:800;color:#9333ea">{{ number_format((float) \App\Models\Review::avg('rating'),1) }}</div></div>
 </div>
 
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
