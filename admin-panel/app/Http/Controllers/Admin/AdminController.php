@@ -296,6 +296,8 @@ class AdminController extends Controller
         };
 
         $baseOrders = Order::query()->when($from, fn ($q) => $q->where('created_at', '>=', $from));
+        $payments = Pembayaran::query()
+            ->when($from, fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('created_at', '>=', $from)));
 
         $chartLabels = [];
         $orderTrend = [];
@@ -308,7 +310,10 @@ class AdminController extends Controller
                 $slice = Order::query()->whereBetween('created_at', [$start, $end]);
                 $chartLabels[] = str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00';
                 $orderTrend[] = (clone $slice)->count();
-                $revenueTrend[] = (float) (clone $slice)->sum('total');
+                $revenueTrend[] = (float) Pembayaran::query()
+                    ->whereHas('order', fn ($oq) => $oq->whereBetween('created_at', [$start, $end]))
+                    ->where('status', 'paid')
+                    ->sum('jumlah');
             }
         } elseif ($period === 'week') {
             for ($i = 6; $i >= 0; $i--) {
@@ -316,7 +321,10 @@ class AdminController extends Controller
                 $slice = Order::query()->whereDate('created_at', $day->toDateString());
                 $chartLabels[] = $day->format('D');
                 $orderTrend[] = (clone $slice)->count();
-                $revenueTrend[] = (float) (clone $slice)->sum('total');
+                $revenueTrend[] = (float) Pembayaran::query()
+                    ->whereHas('order', fn ($oq) => $oq->whereDate('created_at', $day->toDateString()))
+                    ->where('status', 'paid')
+                    ->sum('jumlah');
             }
         } elseif ($period === 'month') {
             for ($i = 29; $i >= 0; $i--) {
@@ -324,7 +332,10 @@ class AdminController extends Controller
                 $slice = Order::query()->whereDate('created_at', $day->toDateString());
                 $chartLabels[] = $day->format('d/m');
                 $orderTrend[] = (clone $slice)->count();
-                $revenueTrend[] = (float) (clone $slice)->sum('total');
+                $revenueTrend[] = (float) Pembayaran::query()
+                    ->whereHas('order', fn ($oq) => $oq->whereDate('created_at', $day->toDateString()))
+                    ->where('status', 'paid')
+                    ->sum('jumlah');
             }
         } else {
             for ($i = 11; $i >= 0; $i--) {
@@ -334,12 +345,15 @@ class AdminController extends Controller
                     ->whereMonth('created_at', $month->month);
                 $chartLabels[] = $month->format('M Y');
                 $orderTrend[] = (clone $slice)->count();
-                $revenueTrend[] = (float) (clone $slice)->sum('total');
+                $revenueTrend[] = (float) Pembayaran::query()
+                    ->whereHas('order', fn ($oq) => $oq->whereYear('created_at', $month->year)->whereMonth('created_at', $month->month))
+                    ->where('status', 'paid')
+                    ->sum('jumlah');
             }
         }
 
-        $grossRevenue = (float) (clone $baseOrders)->sum('total');
-        $netRevenue = (float) (clone $baseOrders)->whereIn('status_payment', ['confirmed', 'paid'])->sum('total');
+        $grossRevenue = (float) (clone $payments)->where('status', 'paid')->sum('jumlah');
+        $netRevenue = max(0, $grossRevenue - (float) (clone $baseOrders)->whereNotNull('deposit_deducted_at')->sum('deposit_fee'));
         $completedOrders = (clone $baseOrders)->whereIn('status', ['done', 'selesai'])->count();
         $pendingOrders = (clone $baseOrders)->whereIn('status_payment', ['pending', 'waiting'])->count();
         $cancelledOrders = (clone $baseOrders)->whereIn('status', ['cancelled', 'batal'])->count();
@@ -358,7 +372,7 @@ class AdminController extends Controller
 
         $difficultyBreakdown = Order::query()
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
-            ->selectRaw('COALESCE(tingkat_kerumitan, "Belum Diisi") as label, COUNT(*) as total')
+            ->selectRaw('COALESCE(difficulty_level, "Belum Diisi") as label, COUNT(*) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->limit(6)
