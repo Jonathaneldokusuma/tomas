@@ -1,42 +1,51 @@
 # TOMAS
 
-TOMAS adalah aplikasi pemesanan jasa tukang dengan tiga bagian utama: backend Laravel untuk admin dan API, aplikasi Android untuk pengguna, dan aplikasi Android untuk tukang.
+TOMAS adalah aplikasi pemesanan jasa tukang yang terdiri dari admin panel, aplikasi pengguna, dan aplikasi pekerja.
+
+## Struktur Repository
+
+- `admin-panel` - backend Laravel, REST API, dan dashboard admin.
+- `userapp` - aplikasi Flutter untuk pengguna yang memesan jasa.
+- `pekerjaapp` - aplikasi Flutter untuk pekerja/tukang yang menerima pekerjaan.
 
 ## Download APK
 
-Versi Android terbaru bisa diunduh dari GitHub Releases:
+APK terbaru tersedia di halaman GitHub Releases:
 
-- [Download TOMAS User](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-user-release.apk)
-- [Download TOMAS Tukang](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-tukang-release.apk)
+- [TOMAS User App](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-user-release.apk)
+- [TOMAS Pekerja App](https://github.com/Jonathaneldokusuma/tomas/releases/latest/download/tomas-tukang-release.apk)
 
-Kalau dibuka dari HP, tekan salah satu link di atas, tunggu file APK selesai diunduh, lalu pilih **Install**.
-
-## Isi Project
-
-- `tomas-app` berisi backend Laravel, API, dan dashboard admin.
-- `tomas-flutter` berisi aplikasi Android untuk pengguna.
-- `tomas-flutter-tukang` berisi aplikasi Android untuk tukang.
-
-## Release Android
-
-APK dibuat otomatis lewat GitHub Actions setiap kali tag versi baru dipush.
-
-```bash
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-Workflow release ada di `.github/workflows/release-apk.yml`. File yang dihasilkan akan muncul di halaman Releases dengan nama:
-
-- `tomas-user-release.apk`
-- `tomas-tukang-release.apk`
-
-## Backend
-
-Backend production yang dipakai aplikasi Android:
+## Backend Production
 
 ```text
 https://tomas-production.up.railway.app
 ```
 
-Jika URL backend berubah, sesuaikan nilai `TOMAS_SERVER_URL` pada workflow release sebelum membuat tag baru.
+## Menjalankan Admin Panel
+
+```bash
+cd admin-panel
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+## Build Aplikasi Android
+
+User app:
+
+```bash
+cd userapp
+flutter pub get
+flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://tomas-production.up.railway.app
+```
+
+Pekerja app:
+
+```bash
+cd pekerjaapp
+flutter pub get
+flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://tomas-production.up.railway.app
+```
