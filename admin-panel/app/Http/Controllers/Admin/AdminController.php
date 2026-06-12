@@ -365,7 +365,8 @@ class AdminController extends Controller
         $q = $request->query('q');
         $status = $request->query('status');
 
-        $list = Tukang::when($q, fn($query) => $query->where(function ($sub) use ($q) {
+        $list = Tukang::where('status_verifikasi', '!=', 'rejected')
+                      ->when($q, fn($query) => $query->where(function ($sub) use ($q) {
                             $sub->where('nama', 'like', "%$q%")
                                 ->orWhere('kategori', 'like', "%$q%");
                         }))
