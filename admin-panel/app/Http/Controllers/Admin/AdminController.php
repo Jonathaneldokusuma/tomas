@@ -13,6 +13,7 @@ use App\Models\SupportChat;
 use App\Models\Notifikasi;
 use App\Models\BroadcastMessage;
 use App\Models\BadgeAward;
+use App\Models\Pembayaran;
 use App\Models\AdminActivity;
 use App\Models\FcmToken;
 use App\Services\FcmService;
@@ -175,6 +176,30 @@ class AdminController extends Controller
             'badges'      => $safe(fn() => BadgeAward::count(), 0),
         ];
 
+        $finance = [
+            'gross_revenue' => $safe(fn() => (float) Pembayaran::where('status', 'paid')->sum('jumlah'), 0),
+            'pending_revenue' => $safe(fn() => (float) Pembayaran::where('status', 'pending')->sum('jumlah'), 0),
+            'failed_revenue' => $safe(fn() => (float) Pembayaran::whereIn('status', ['failed', 'expired'])->sum('jumlah'), 0),
+            'deposit_potential' => $safe(fn() => (float) Order::whereNotNull('deposit_fee')->sum('deposit_fee'), 0),
+            'deposit_deducted' => $safe(fn() => (float) Order::whereNotNull('deposit_deducted_at')->sum('deposit_fee'), 0),
+        ];
+        $finance['net_revenue'] = max(0, $finance['gross_revenue'] - $finance['deposit_deducted']);
+        $finance['active_revenue'] = max(0, $finance['gross_revenue'] + $finance['pending_revenue']);
+
+        $orderStatusBreakdown = [
+            'pending' => $safe(fn() => Order::where('status', 'pending')->count(), 0),
+            'confirmed' => $safe(fn() => Order::where('status', 'confirmed')->count(), 0),
+            'in_progress' => $safe(fn() => Order::where('status', 'in_progress')->count(), 0),
+            'done' => $safe(fn() => Order::where('status', 'done')->count(), 0),
+            'rejected' => $safe(fn() => Order::where('status', 'rejected')->count(), 0),
+        ];
+
+        $difficultyBreakdown = [
+            'easy' => $safe(fn() => Order::where('difficulty_level', 'easy')->count(), 0),
+            'medium' => $safe(fn() => Order::where('difficulty_level', 'medium')->count(), 0),
+            'hard' => $safe(fn() => Order::where('difficulty_level', 'hard')->count(), 0),
+        ];
+
         $tukangList = $safe(fn() => Tukang::orderBy('nama')->get(['id_tukang', 'nama']), collect());
 
         $tukangPerformance = $safe(fn() => Tukang::with(['orders' => function ($q) use ($from, $tukangId) {
@@ -241,7 +266,8 @@ class AdminController extends Controller
             'stats', 'recentOrders', 'tukangPerformance',
             'topRated', 'topWorkers', 'topCustomers',
             'tukangList', 'period', 'tukangId', 'periodLabel',
-            'chartLabels', 'chartData', 'view', 'dashboardError', 'recentActivities'
+            'chartLabels', 'chartData', 'view', 'dashboardError', 'recentActivities',
+            'finance', 'orderStatusBreakdown', 'difficultyBreakdown'
         ));
     }
 

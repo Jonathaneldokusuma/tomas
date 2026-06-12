@@ -106,6 +106,8 @@ $statCards = [
     ['label'=>'Ulasan',           'val'=>number_format($stats['reviews']),        'icon'=>'fa-star',              'ibg'=>'#fefce8','ic'=>'#ca8a04','sub'=>$periodLabel],
     ['label'=>'Rating Rata-rata', 'val'=>($stats['avg_rating'] ?: '—'),           'icon'=>'fa-chart-line',        'ibg'=>'#fdf4ff','ic'=>'#9333ea','sub'=>'Dari ulasan'],
     ['label'=>'Total Pesanan',    'val'=>number_format($stats['orders_total']),   'icon'=>'fa-database',          'ibg'=>'#f0f9ff','ic'=>'#0ea5e9','sub'=>'Sepanjang waktu'],
+    ['label'=>'Gross Revenue',    'val'=>'Rp'.number_format($finance['gross_revenue'],0,',','.'), 'icon'=>'fa-wallet', 'ibg'=>'#ecfeff','ic'=>'#0891b2','sub'=>'Pembayaran paid'],
+    ['label'=>'Net Revenue',      'val'=>'Rp'.number_format($finance['net_revenue'],0,',','.'),   'icon'=>'fa-coins',  'ibg'=>'#f0fdf4','ic'=>'#16a34a','sub'=>'Setelah potongan deposit'],
 ];
 @endphp
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:20px">
@@ -172,6 +174,52 @@ $statCards = [
                 <a href="{{ route('admin.broadcast') }}" style="color:#fff;text-decoration:none;font-size:12px;font-weight:600">• Kirim broadcast</a>
             </div>
         </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <div>
+                <h3 style="font-size:14px;font-weight:700;color:#0d1b2e">Status Order</h3>
+                <p style="font-size:11px;color:#9ca3af;margin-top:2px">Komposisi pesanan saat ini.</p>
+            </div>
+            <i class="fas fa-chart-pie" style="color:#2563eb"></i>
+        </div>
+        <canvas id="statusChart" style="max-height:220px"></canvas>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <div>
+                <h3 style="font-size:14px;font-weight:700;color:#0d1b2e">Level Kesulitan</h3>
+                <p style="font-size:11px;color:#9ca3af;margin-top:2px">Distribusi kompleksitas order.</p>
+            </div>
+            <i class="fas fa-chart-donut" style="color:#9333ea"></i>
+        </div>
+        <canvas id="difficultyChart" style="max-height:220px"></canvas>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600">Pending Revenue</div>
+        <div style="font-size:22px;font-weight:800;color:#ea580c">Rp{{ number_format($finance['pending_revenue'],0,',','.') }}</div>
+        <div style="font-size:11px;color:#9ca3af">Menunggu settlement</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600">Deposit Potential</div>
+        <div style="font-size:22px;font-weight:800;color:#7c3aed">Rp{{ number_format($finance['deposit_potential'],0,',','.') }}</div>
+        <div style="font-size:11px;color:#9ca3af">Estimasi potongan deposit</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600">Deposit Deducted</div>
+        <div style="font-size:22px;font-weight:800;color:#16a34a">Rp{{ number_format($finance['deposit_deducted'],0,',','.') }}</div>
+        <div style="font-size:11px;color:#9ca3af">Sudah dipotong</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px">
+        <div style="font-size:11px;color:#6b7280;font-weight:600">Net to Admin</div>
+        <div style="font-size:22px;font-weight:800;color:#2563eb">Rp{{ number_format($finance['net_revenue'],0,',','.') }}</div>
+        <div style="font-size:11px;color:#9ca3af">Gross minus deposit</div>
     </div>
 </div>
 
@@ -620,6 +668,49 @@ new Chart(document.getElementById('trendChart'), {
         }
     }
 });
+
+const statusCtx = document.getElementById('statusChart');
+if (statusCtx) {
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Pending', 'Confirmed', 'In Progress', 'Done', 'Rejected'],
+        datasets: [{
+            data: {!! json_encode(array_values($orderStatusBreakdown)) !!},
+            backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#16a34a', '#ef4444'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } },
+        },
+        cutout: '64%',
+    }
+});
+}
+
+const diffCtx = document.getElementById('difficultyChart');
+if (diffCtx) {
+new Chart(diffCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Easy', 'Medium', 'Hard'],
+        datasets: [{
+            data: {!! json_encode(array_values($difficultyBreakdown)) !!},
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } },
+        }
+    }
+});
+}
 </script>
 @endif
 <style>
