@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BadgeAward;
+use App\Models\AdminActivity;
 use App\Models\FcmToken;
 use App\Models\Notifikasi;
 use App\Models\Tukang;
@@ -15,6 +16,23 @@ use Illuminate\Support\Str;
 
 class BadgeController extends Controller
 {
+    private function logActivity(string $action, ?string $subjectType = null, $subjectId = null, ?string $subjectName = null, array $meta = []): void
+    {
+        try {
+            AdminActivity::create([
+                'admin_username' => trim((string) session('admin_username', config('app.admin_user', 'admin'))),
+                'action' => $action,
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId ? (int) $subjectId : null,
+                'subject_name' => $subjectName,
+                'meta' => $meta ?: null,
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            // audit trail should never block badge operations
+        }
+    }
+
     public function index(Request $request)
     {
         $badges = BadgeAward::orderByDesc('id_badge_award')->get();
@@ -56,6 +74,9 @@ class BadgeController extends Controller
             'gambar'            => $path,
             'created_by_admin'  => session('admin_username', 'admin'),
         ]);
+        $this->logActivity('create_badge', $targetType, $targetId, $badge->nama, [
+            'target_type' => $targetType,
+        ]);
 
         if ($targetType === 'user') {
             Notifikasi::kirim(
@@ -88,6 +109,7 @@ class BadgeController extends Controller
     public function destroy($id)
     {
         $badge = BadgeAward::findOrFail($id);
+        $this->logActivity('delete_badge', $badge->target_type, $badge->target_id, $badge->nama);
         if ($badge->gambar) {
             Storage::disk('public')->delete($badge->gambar);
         }

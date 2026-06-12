@@ -13,6 +13,7 @@ use App\Models\SupportChat;
 use App\Models\Notifikasi;
 use App\Models\BroadcastMessage;
 use App\Models\BadgeAward;
+use App\Models\AdminActivity;
 use App\Models\FcmToken;
 use App\Services\FcmService;
 use Illuminate\Database\QueryException;
@@ -29,6 +30,28 @@ class AdminController extends Controller
         if (!$token) return false;
         $expected = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
         return hash_equals($expected, $token);
+    }
+
+    private function adminUsername(): string
+    {
+        return trim((string) session('admin_username', config('app.admin_user', 'admin')));
+    }
+
+    private function logActivity(string $action, ?string $subjectType = null, $subjectId = null, ?string $subjectName = null, array $meta = []): void
+    {
+        try {
+            AdminActivity::create([
+                'admin_username' => $this->adminUsername(),
+                'action' => $action,
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId ? (int) $subjectId : null,
+                'subject_name' => $subjectName,
+                'meta' => $meta ?: null,
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to save admin activity', ['error' => $e->getMessage(), 'action' => $action]);
+        }
     }
 
     public function showLogin(Request $request)
@@ -61,6 +84,8 @@ class AdminController extends Controller
             $token = hash_hmac('sha256', 'admin_authenticated', config('app.key'));
             $isSecure = $request->secure() || $request->header('X-Forwarded-Proto') === 'https';
             $cookie = cookie('admin_token', $token, 60 * 24 * 365 * 5, '/', null, $isSecure, true, false, 'lax');
+            session(['admin_username' => $givenUser]);
+            $this->logActivity('login', 'admin', null, $givenUser, ['ip' => $request->ip()]);
             return redirect()->route('admin.dashboard')
                 ->withCookie($cookie);
         }
@@ -70,6 +95,7 @@ class AdminController extends Controller
 
     public function logout(Request $request)
     {
+        $this->logActivity('logout', 'admin', null, $this->adminUsername());
         return redirect()->route('admin.login')
             ->withCookie(\Cookie::forget('admin_token'))
             ->with('success', 'Berhasil logout.');
@@ -111,6 +137,7 @@ class AdminController extends Controller
         $topRated = collect();
         $topCustomers = collect();
         $recentOrders = collect();
+        $recentActivities = collect();
         $chartLabels = [];
         $chartData = [];
 
@@ -208,11 +235,13 @@ class AdminController extends Controller
             ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId))
             ->orderByDesc('id_order')->limit(10)->get(), collect());
 
+        $recentActivities = $safe(fn() => AdminActivity::orderByDesc('id_admin_activity')->limit(8)->get(), collect());
+
         return view('admin.dashboard', compact(
             'stats', 'recentOrders', 'tukangPerformance',
             'topRated', 'topWorkers', 'topCustomers',
             'tukangList', 'period', 'tukangId', 'periodLabel',
-            'chartLabels', 'chartData', 'view', 'dashboardError'
+            'chartLabels', 'chartData', 'view', 'dashboardError', 'recentActivities'
         ));
     }
 
@@ -323,7 +352,9 @@ class AdminController extends Controller
 
     public function deleteUser($id)
     {
-        User::findOrFail($id)->delete();
+        $user = User::findOrFail($id);
+        $this->logActivity('delete_user', 'user', $user->id_user, $user->nama);
+        $user->delete();
         return back()->with('success', 'User berhasil dihapus.');
     }
 
@@ -378,6 +409,11 @@ class AdminController extends Controller
             'foto'         => $fotoPath,
         ]);
 
+        $this->logActivity('create_tukang', 'tukang', null, $request->nama, [
+            'status_aktif' => $request->status_aktif,
+            'kategori' => $request->kategori,
+        ]);
+
         return redirect()->route('admin.tukang')->with('success', 'Tukang berhasil ditambahkan.');
     }
 
@@ -425,13 +461,16 @@ class AdminController extends Controller
         }
 
         $tukang->update($data);
+        $this->logActivity('update_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         return redirect()->route('admin.tukang')->with('success', 'Tukang berhasil diperbarui.');
     }
 
     public function deleteTukang($id)
     {
-        Tukang::findOrFail($id)->delete();
+        $tukang = Tukang::findOrFail($id);
+        $this->logActivity('delete_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
+        $tukang->delete();
         return back()->with('success', 'Tukang berhasil dihapus.');
     }
 
@@ -447,6 +486,7 @@ class AdminController extends Controller
     {
         $request->validate(['nama_layanan' => 'required|string|max:100|unique:layanan,nama_layanan']);
         Layanan::create(['nama_layanan' => $request->nama_layanan]);
+        $this->logActivity('create_layanan', 'layanan', null, $request->nama_layanan);
         return back()->with('success', 'Layanan berhasil ditambahkan.');
     }
 
@@ -455,12 +495,15 @@ class AdminController extends Controller
         $layanan = Layanan::findOrFail($id);
         $request->validate(['nama_layanan' => 'required|string|max:100|unique:layanan,nama_layanan,' . $id . ',id_layanan']);
         $layanan->update(['nama_layanan' => $request->nama_layanan]);
+        $this->logActivity('update_layanan', 'layanan', $layanan->id_layanan, $request->nama_layanan);
         return back()->with('success', 'Layanan berhasil diperbarui.');
     }
 
     public function deleteLayanan($id)
     {
-        Layanan::findOrFail($id)->delete();
+        $layanan = Layanan::findOrFail($id);
+        $this->logActivity('delete_layanan', 'layanan', $layanan->id_layanan, $layanan->nama_layanan);
+        $layanan->delete();
         return back()->with('success', 'Layanan berhasil dihapus.');
     }
 
@@ -478,7 +521,9 @@ class AdminController extends Controller
 
     public function deleteOrder($id)
     {
-        Order::findOrFail($id)->delete();
+        $order = Order::findOrFail($id);
+        $this->logActivity('delete_order', 'order', $order->id_order, (string) $order->id_order);
+        $order->delete();
         return back()->with('success', 'Order berhasil dihapus.');
     }
 
@@ -494,6 +539,7 @@ class AdminController extends Controller
     {
         $tukang = Tukang::findOrFail($id);
         $tukang->update(['status_verifikasi' => 'verified', 'status_aktif' => 1]);
+        $this->logActivity('approve_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         // ── Notifikasi FCM ke tukang ──
         $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
@@ -510,6 +556,7 @@ class AdminController extends Controller
     {
         $tukang = Tukang::findOrFail($id);
         $tukang->update(['status_verifikasi' => 'rejected']);
+        $this->logActivity('reject_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         // ── Notifikasi FCM ke tukang ──
         $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
@@ -526,6 +573,7 @@ class AdminController extends Controller
     {
         $tukang = Tukang::findOrFail($id);
         $tukang->update(['status_aktif' => 0]);
+        $this->logActivity('ban_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         // ── Notifikasi FCM ke tukang ──
         $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
@@ -542,6 +590,7 @@ class AdminController extends Controller
     {
         $tukang = Tukang::findOrFail($id);
         $tukang->update(['status_aktif' => 1]);
+        $this->logActivity('unban_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         // ── Notifikasi FCM ke tukang ──
         $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
@@ -560,6 +609,7 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
         $user->update(['is_banned' => 1]);
+        $this->logActivity('ban_user', 'user', $user->id_user, $user->nama);
 
         // ── Notifikasi in-app ke user ──
         Notifikasi::kirim(
@@ -583,6 +633,7 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
         $user->update(['is_banned' => 0]);
+        $this->logActivity('unban_user', 'user', $user->id_user, $user->nama);
 
         // ── Notifikasi in-app ke user ──
         Notifikasi::kirim(
@@ -620,6 +671,7 @@ class AdminController extends Controller
     {
         $order = Order::with(['user', 'tukang'])->findOrFail($id);
         $order->update(['status_payment' => 'confirmed', 'status' => 'done']);
+        $this->logActivity('confirm_payment', 'order', $order->id_order, (string) $order->id_order);
 
         // ── Notifikasi in-app ke user ──
         if ($order->id_user) {
@@ -664,7 +716,9 @@ class AdminController extends Controller
 
     public function deleteReview($id)
     {
-        Review::findOrFail($id)->delete();
+        $review = Review::findOrFail($id);
+        $this->logActivity('delete_review', 'review', $review->id_review, (string) $review->id_review);
+        $review->delete();
         return back()->with('success', 'Review berhasil dihapus.');
     }
 
@@ -685,6 +739,7 @@ class AdminController extends Controller
         ]);
 
         BroadcastMessage::create($request->only('judul', 'isi', 'tipe'));
+        $this->logActivity('create_broadcast', 'broadcast', null, $request->judul, ['tipe' => $request->tipe]);
 
         // ── FCM push ke semua tukang ──
         $allTukangTokens = FcmToken::where('user_type', 'tukang')->pluck('fcm_token')->toArray();
@@ -700,7 +755,9 @@ class AdminController extends Controller
 
     public function deleteBroadcast($id)
     {
-        BroadcastMessage::findOrFail($id)->delete();
+        $broadcast = BroadcastMessage::findOrFail($id);
+        $this->logActivity('delete_broadcast', 'broadcast', $broadcast->id_broadcast, $broadcast->judul);
+        $broadcast->delete();
         return back()->with('success', 'Pesan dihapus.');
     }
 

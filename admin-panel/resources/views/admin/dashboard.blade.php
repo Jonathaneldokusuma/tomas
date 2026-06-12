@@ -124,6 +124,57 @@ $statCards = [
     @endforeach
 </div>
 
+<div style="display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-bottom:20px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <div>
+                <h3 style="font-size:14px;font-weight:700;color:#0d1b2e">Aktivitas Admin Terbaru</h3>
+                <p style="font-size:11px;color:#9ca3af;margin-top:2px">Audit trail untuk aksi backend penting.</p>
+            </div>
+            <i class="fas fa-clipboard-list" style="color:#2563eb"></i>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+            @forelse($recentActivities as $activity)
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #f1f5f9;border-radius:12px;background:#fafbff">
+                    <div style="width:30px;height:30px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="fas fa-shield-halved" style="color:#2563eb;font-size:12px"></i>
+                    </div>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:13px;font-weight:700;color:#111827">{{ $activity->action }}</div>
+                        <div style="font-size:11px;color:#6b7280;margin-top:2px">
+                            {{ $activity->admin_username ?: 'admin' }}
+                            @if($activity->subject_name)
+                                · {{ $activity->subject_name }}
+                            @endif
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;white-space:nowrap">{{ $activity->created_at?->diffForHumans() }}</div>
+                </div>
+            @empty
+                <div style="padding:22px;text-align:center;color:#9ca3af;font-size:13px">
+                    Belum ada aktivitas admin yang tercatat.
+                </div>
+            @endforelse
+        </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px">
+            <div style="font-size:14px;font-weight:700;color:#0d1b2e;margin-bottom:6px">Backend Health</div>
+            <div style="font-size:12px;color:#6b7280;line-height:1.55">
+                Admin panel sudah terhubung ke backend live, verifikasi bisa melihat foto dokumen, badge bisa diproses untuk user/tukang, dan aktivitas penting terekam.
+            </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:14px;padding:18px;color:#fff">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">Quick Actions</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+                <a href="{{ route('admin.tukang.verifikasi') }}" style="color:#fff;text-decoration:none;font-size:12px;font-weight:600">• Buka verifikasi tukang</a>
+                <a href="{{ route('admin.badges') }}" style="color:#fff;text-decoration:none;font-size:12px;font-weight:600">• Kelola badge live</a>
+                <a href="{{ route('admin.broadcast') }}" style="color:#fff;text-decoration:none;font-size:12px;font-weight:600">• Kirim broadcast</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px">
     <a href="{{ route('admin.tukang.verifikasi') }}" style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;text-decoration:none;color:inherit;display:block">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
