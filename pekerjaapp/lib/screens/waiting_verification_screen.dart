@@ -1,10 +1,80 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/tukang_service.dart';
 
 const _kBlue = Color(0xFF2563EB);
 const _kBg = Color(0xFFF2F2F7);
 
-class WaitingVerificationScreen extends StatelessWidget {
+class WaitingVerificationScreen extends StatefulWidget {
   const WaitingVerificationScreen({super.key});
+
+  @override
+  State<WaitingVerificationScreen> createState() =>
+      _WaitingVerificationScreenState();
+}
+
+class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
+  Timer? _timer;
+  String _status = 'pending';
+  String _message =
+      'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _bootstrap() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final cached = prefs.getString('tukang_status_verifikasi') ?? 'pending';
+    setState(() => _status = cached);
+    await _refresh();
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final latest = await TukangService.fetchLatestVerificationStatus();
+      if (!mounted || latest == null) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('tukang_status_verifikasi', latest);
+
+      if (latest != _status) {
+        setState(() => _status = latest);
+      }
+
+      if (latest == 'verified') {
+        await TukangService.syncProfileCache();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        return;
+      }
+
+      setState(() {
+        _message = latest == 'rejected'
+            ? 'Register ditolak oleh admin. Kamu bisa daftar ulang setelah memperbaiki data.'
+            : 'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _cancelAndBack() async {
+    await TukangService.logout();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/register');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,58 +85,116 @@ class WaitingVerificationScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
           child: Column(
             children: [
-              Row(children: [
-                _step('1', 'Data Diri', done: true),
-                Expanded(child: Container(height: 2, color: _kBlue)),
-                _step('2', 'Upload KTP', done: true),
-                Expanded(child: Container(height: 2, color: _kBlue)),
-                _step('3', 'Verifikasi', active: true),
-              ]),
+              Row(
+                children: [
+                  _step('1', 'Data Diri', done: true),
+                  Expanded(child: Container(height: 2, color: _kBlue)),
+                  _step('2', 'Upload KTP', done: true),
+                  Expanded(child: Container(height: 2, color: _kBlue)),
+                  _step('3', 'Verifikasi', active: true),
+                ],
+              ),
               const SizedBox(height: 48),
               Container(
-                width: 90, height: 90,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF9C3),
+                  color: _status == 'rejected'
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFFFEF9C3),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFFDE047), width: 3),
+                  border: Border.all(
+                    color: _status == 'rejected'
+                        ? const Color(0xFFFECACA)
+                        : const Color(0xFFFDE047),
+                    width: 3,
+                  ),
                 ),
-                child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFCA8A04), size: 48),
+                child: Icon(
+                  _status == 'rejected'
+                      ? Icons.cancel_outlined
+                      : Icons.hourglass_top_rounded,
+                  color: _status == 'rejected'
+                      ? Colors.red
+                      : const Color(0xFFCA8A04),
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
-              const Text('Menunggu Verifikasi', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
+              Text(
+                _status == 'rejected' ? 'Register Ditolak' : 'Menunggu Verifikasi',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
               const SizedBox(height: 8),
-              const Text(
-                'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.',
+              Text(
+                _message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 36),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
-                child: Column(children: [
-                  _checklist('Data diri telah diterima', done: true),
-                  const SizedBox(height: 12),
-                  _checklist('Dokumen KTP telah diupload', done: true),
-                  const SizedBox(height: 12),
-                  _checklist('Sedang proses review oleh admin', active: true),
-                  const SizedBox(height: 12),
-                  _checklist('Akun aktif & siap digunakan'),
-                ]),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _checklist('Data diri telah diterima', done: true),
+                    const SizedBox(height: 12),
+                    _checklist('Dokumen KTP telah diupload', done: true),
+                    const SizedBox(height: 12),
+                    _checklist(
+                      _status == 'rejected'
+                          ? 'Register ditolak admin'
+                          : 'Sedang proses review oleh admin',
+                      active: _status != 'rejected',
+                      done: _status == 'rejected',
+                    ),
+                    const SizedBox(height: 12),
+                    _checklist('Akun aktif & siap digunakan'),
+                  ],
+                ),
               ),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                  onPressed: _cancelAndBack,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white, foregroundColor: _kBlue,
+                    backgroundColor: Colors.white,
+                    foregroundColor: _kBlue,
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: _kBlue)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: _kBlue),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Kembali ke Login', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  child: Text(
+                    _status == 'rejected'
+                        ? 'Daftar Ulang'
+                        : 'Batalkan & Kembali',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -77,30 +205,78 @@ class WaitingVerificationScreen extends StatelessWidget {
   }
 
   Widget _checklist(String label, {bool done = false, bool active = false}) {
-    return Row(children: [
-      Container(
-        width: 24, height: 24,
-        decoration: BoxDecoration(
-          color: done ? Colors.green : (active ? const Color(0xFFFEF9C3) : const Color(0xFFF3F4F6)),
-          shape: BoxShape.circle,
-          border: Border.all(color: done ? Colors.green : (active ? const Color(0xFFFDE047) : const Color(0xFFE5E7EB)), width: 1.5),
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: done
+                ? Colors.green
+                : (active ? const Color(0xFFFEF9C3) : const Color(0xFFF3F4F6)),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: done
+                  ? Colors.green
+                  : (active ? const Color(0xFFFDE047) : const Color(0xFFE5E7EB)),
+              width: 1.5,
+            ),
+          ),
+          child: done
+              ? const Icon(Icons.check, color: Colors.white, size: 14)
+              : (active
+                  ? const Icon(Icons.access_time, color: Color(0xFFCA8A04), size: 14)
+                  : const SizedBox()),
         ),
-        child: done
-            ? const Icon(Icons.check, color: Colors.white, size: 14)
-            : (active ? const Icon(Icons.access_time, color: Color(0xFFCA8A04), size: 14) : const SizedBox()),
-      ),
-      const SizedBox(width: 12),
-      Text(label, style: TextStyle(fontSize: 13, color: done ? const Color(0xFF374151) : (active ? const Color(0xFF374151) : Colors.grey))),
-    ]);
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: done
+                  ? const Color(0xFF374151)
+                  : (active ? const Color(0xFF374151) : Colors.grey),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _step(String num, String label, {bool active = false, bool done = false}) => Column(children: [
-    Container(
-      width: 32, height: 32,
-      decoration: BoxDecoration(color: done ? Colors.green : (active ? _kBlue : const Color(0xFFE5E7EB)), shape: BoxShape.circle),
-      child: Center(child: done ? const Icon(Icons.check, color: Colors.white, size: 16) : Text(num, style: TextStyle(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 14))),
-    ),
-    const SizedBox(height: 4),
-    Text(label, style: TextStyle(fontSize: 10, color: active ? _kBlue : (done ? Colors.green : Colors.grey))),
-  ]);
+  Widget _step(String num, String label, {bool active = false, bool done = false}) =>
+      Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: done
+                  ? Colors.green
+                  : (active ? _kBlue : const Color(0xFFE5E7EB)),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: done
+                  ? const Icon(Icons.check, color: Colors.white, size: 16)
+                  : Text(
+                      num,
+                      style: TextStyle(
+                        color: active ? Colors.white : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: active ? _kBlue : (done ? Colors.green : Colors.grey),
+            ),
+          ),
+        ],
+      );
 }

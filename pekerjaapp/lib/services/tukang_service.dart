@@ -129,6 +129,35 @@ class TukangService {
     await prefs.remove('tukang_status_verifikasi');
   }
 
+  static Future<void> syncProfileCache() async {
+    try {
+      final profile = await getProfile();
+      final tukang = profile['tukang'] as Map<String, dynamic>?;
+      if (tukang == null) return;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'tukang_status_verifikasi',
+        jsonString(tukang['status_verifikasi']),
+      );
+      if (tukang['nama'] != null) {
+        await prefs.setString('tukang_nama', jsonString(tukang['nama']));
+      }
+      if (tukang['id_tukang'] != null) {
+        await prefs.setInt('tukang_id', jsonInt(tukang['id_tukang']));
+      }
+    } catch (_) {}
+  }
+
+  static Future<String?> fetchLatestVerificationStatus() async {
+    try {
+      final profile = await getProfile();
+      final tukang = profile['tukang'] as Map<String, dynamic>?;
+      return jsonString(tukang?['status_verifikasi']);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<Map<String, dynamic>> getOrders() async {
     final res = await http
         .get(Uri.parse('$baseUrl/tukang/orders'), headers: await _headers())

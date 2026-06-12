@@ -60,6 +60,9 @@ class TukangAuthController extends Controller
         if (!$tukang || !Hash::check($request->password, $tukang->password)) {
             return response()->json(['message' => 'Username atau password salah.'], 401);
         }
+        if ($tukang->status_verifikasi === 'rejected') {
+            return response()->json(['message' => 'Register ditolak oleh admin. Silakan daftar ulang atau hubungi admin.'], 403);
+        }
         if ($tukang->status_verifikasi !== 'verified') {
             return response()->json(['message' => 'Akun belum diverifikasi admin.'], 403);
         }

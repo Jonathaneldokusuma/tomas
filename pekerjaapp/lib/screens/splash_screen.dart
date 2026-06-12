@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/tukang_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,13 +32,28 @@ class _SplashScreenState extends State<SplashScreen>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     final token = prefs.getString('tukang_token');
-    final statusVerifikasi = prefs.getString('tukang_status_verifikasi');
     debugPrint('TOMAS_TUKANG_BOOT: splash token=${token?.isNotEmpty == true}');
     if (token != null && token.isNotEmpty) {
-      if (statusVerifikasi != 'verified') {
+      final latestStatus = await TukangService.fetchLatestVerificationStatus();
+      if (!mounted) return;
+      if (latestStatus == 'rejected') {
+        await TukangService.logout();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(
+          context,
+          '/login',
+          arguments: {'message': 'Register ditolak oleh admin. Silakan daftar ulang.'},
+        );
+        return;
+      }
+      if (latestStatus != 'verified') {
+        if (latestStatus != null) {
+          await prefs.setString('tukang_status_verifikasi', latestStatus);
+        }
         Navigator.pushReplacementNamed(context, '/waiting-verification');
         return;
       }
+      await TukangService.syncProfileCache();
       // Refresh FCM token di server saat auto-login
       await NotificationService.saveFcmTokenToServer();
       if (!mounted) return;

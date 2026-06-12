@@ -46,7 +46,15 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/dashboard');
       } else if (res['statusCode'] == 403) {
-        Navigator.pushReplacementNamed(context, '/waiting-verification');
+        final message = (res['message'] ?? '').toString();
+        if (message.toLowerCase().contains('ditolak')) {
+          setState(() => _error = message);
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            '/waiting-verification',
+          );
+        }
       } else {
         setState(() => _error = res['message'] ?? 'Login gagal');
       }
