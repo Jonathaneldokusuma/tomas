@@ -21,6 +21,25 @@
 </div>
 @endif
 
+@php
+    $tukangList = collect($tukang->items());
+@endphp
+
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px">
+        <div style="font-size:12px;color:#6b7280">Menunggu</div>
+        <div style="font-size:22px;font-weight:800;color:#92400e">{{ $tukang->total() }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px">
+        <div style="font-size:12px;color:#6b7280">Foto KTP / Selfie</div>
+        <div style="font-size:22px;font-weight:800;color:#2563eb">{{ $tukangList->filter(fn ($item) => $item->foto_ktp || $item->foto_selfie)->count() }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px">
+        <div style="font-size:12px;color:#6b7280">Siap Diproses</div>
+        <div style="font-size:22px;font-weight:800;color:#10b981">{{ $tukangList->filter(fn ($item) => $item->foto_ktp && $item->foto_selfie)->count() }}</div>
+    </div>
+</div>
+
 @if($tukang->isEmpty())
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:48px;text-align:center">
     <i class="fas fa-check-double" style="font-size:40px;color:#10b981;margin-bottom:16px;display:block"></i>
@@ -82,11 +101,11 @@
     @if($t->foto_ktp || $t->foto_selfie)
     <div style="border-top:1px solid #f1f5f9;padding:16px 20px">
         <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Dokumen Verifikasi</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
             @if($t->foto_ktp)
             <div>
                 <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Foto KTP</div>
-                <a href="{{ url('storage/'.$t->foto_ktp) }}" target="_blank">
+                <a href="{{ url('storage/'.$t->foto_ktp) }}" target="_blank" data-preview-image="{{ url('storage/'.$t->foto_ktp) }}" data-preview-title="Foto KTP - {{ $t->nama }}">
                     <img src="{{ url('storage/'.$t->foto_ktp) }}" style="height:100px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover;cursor:pointer">
                 </a>
             </div>
@@ -94,7 +113,7 @@
             @if($t->foto_selfie)
             <div>
                 <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Selfie dengan KTP</div>
-                <a href="{{ url('storage/'.$t->foto_selfie) }}" target="_blank">
+                <a href="{{ url('storage/'.$t->foto_selfie) }}" target="_blank" data-preview-image="{{ url('storage/'.$t->foto_selfie) }}" data-preview-title="Selfie - {{ $t->nama }}">
                     <img src="{{ url('storage/'.$t->foto_selfie) }}" style="height:100px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover;cursor:pointer">
                 </a>
             </div>
@@ -112,5 +131,60 @@
 
 <div style="margin-top:16px">{{ $tukang->links() }}</div>
 @endif
+
+<div id="image-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:18px;max-width:min(92vw,960px);width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e2e8f0">
+            <div>
+                <div id="image-preview-title" style="font-size:14px;font-weight:700;color:#0f172a">Preview Foto</div>
+                <div style="font-size:12px;color:#64748b">Klik area gelap atau tombol tutup untuk kembali.</div>
+            </div>
+            <button type="button" id="image-preview-close" style="border:none;background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer">
+                Tutup
+            </button>
+        </div>
+        <div style="background:#0f172a">
+            <img id="image-preview-img" src="" alt="Preview foto verifikasi" style="display:block;max-height:80vh;width:100%;object-fit:contain;margin:0 auto">
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('image-preview-modal');
+    const image = document.getElementById('image-preview-img');
+    const title = document.getElementById('image-preview-title');
+    const close = document.getElementById('image-preview-close');
+
+    function openPreview(src, text) {
+        if (!src) return;
+        image.src = src;
+        title.textContent = text || 'Preview Foto';
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePreview() {
+        modal.style.display = 'none';
+        image.src = '';
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-preview-image]').forEach((el) => {
+        el.addEventListener('click', (event) => {
+            event.preventDefault();
+            openPreview(el.getAttribute('data-preview-image'), el.getAttribute('data-preview-title'));
+        });
+    });
+
+    close.addEventListener('click', closePreview);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) closePreview();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closePreview();
+    });
+})();
+</script>
 
 @endsection

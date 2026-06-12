@@ -6,7 +6,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">
         <div>
             <h1 style="font-size:20px;font-weight:700;color:#1e293b">Badge Custom</h1>
-            <p style="color:#64748b;font-size:13px;margin-top:2px">Tambahkan badge dengan gambar spesial untuk user atau tukang</p>
+            <p style="color:#64748b;font-size:13px;margin-top:2px">Tambahkan badge untuk user atau tukang, dan badge itu langsung tampil di dua app secara live.</p>
         </div>
         <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600">
             <i class="fas fa-award" style="margin-right:6px"></i>Badge baru otomatis muncul di profil target
@@ -24,6 +24,21 @@
         </div>
     @endif
 
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px">
+            <div style="font-size:12px;color:#64748b">Badge User</div>
+            <div style="font-size:22px;font-weight:800;color:#1d4ed8">{{ $badges->where('target_type', 'user')->count() }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px">
+            <div style="font-size:12px;color:#64748b">Badge Tukang</div>
+            <div style="font-size:22px;font-weight:800;color:#7c3aed">{{ $badges->where('target_type', 'tukang')->count() }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px">
+            <div style="font-size:12px;color:#64748b">Target Aktif</div>
+            <div style="font-size:22px;font-weight:800;color:#059669">{{ $users->count() + $tukangs->count() }}</div>
+        </div>
+    </div>
+
     <div style="display:grid;grid-template-columns:420px 1fr;gap:18px;align-items:start">
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.05);overflow:hidden">
             <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9">
@@ -40,6 +55,7 @@
                         <option value="user">User</option>
                         <option value="tukang">Tukang</option>
                     </select>
+                    <p style="font-size:11px;color:#6b7280;margin-top:6px">Pilih satu target agar badge muncul di app yang sesuai.</p>
                 </div>
 
                 <div>
@@ -133,6 +149,9 @@
                                             {{ $badge->target_type }}
                                         </div>
                                     </div>
+                                </div>
+                                <div style="margin-top:10px;font-size:11px;color:#6b7280">
+                                    Badge ini langsung ikut ke response profil user/tukang dan tampil di app masing-masing.
                                 </div>
                                 @if($badge->deskripsi)
                                     <p style="font-size:12px;color:#4b5563;line-height:1.5;margin-top:10px">{{ $badge->deskripsi }}</p>
