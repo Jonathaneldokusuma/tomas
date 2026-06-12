@@ -13,7 +13,7 @@ class User extends Authenticatable
     protected $primaryKey = 'id_user';
     public $timestamps = false;
 
-    protected $fillable = ['nama', 'no_hp', 'alamat', 'password'];
+    protected $fillable = ['nama', 'no_hp', 'alamat', 'password', 'is_banned'];
     protected $hidden   = ['password'];
 
     public function orders()

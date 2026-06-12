@@ -216,11 +216,105 @@ class AdminController extends Controller
 
     public function users(Request $request)
     {
-        $q = $request->query('q');
-        $users = User::when($q, fn($query) => $query->where('nama', 'like', "%$q%")
-                                                     ->orWhere('no_hp', 'like', "%$q%"))
-                     ->orderByDesc('id_user')->paginate(15);
-        return view('admin.users.index', compact('users', 'q'));
+        $q = trim((string) $request->query('q', ''));
+        $status = in_array($request->query('status'), ['active', 'banned'], true)
+            ? $request->query('status')
+            : '';
+
+        $users = $this->usersQuery($q, $status)
+            ->withCount('orders')
+            ->orderByDesc('id_user')
+            ->paginate(15);
+
+        return view('admin.users.index', compact('users', 'q', 'status'));
+    }
+
+    private function usersQuery(string $q = '', string $status = '')
+    {
+        return User::query()
+            ->when($q !== '', fn($query) => $query->where(function ($sub) use ($q) {
+                $sub->where('nama', 'like', "%{$q}%")
+                    ->orWhere('no_hp', 'like', "%{$q}%");
+            }))
+            ->when($status === 'active', fn($query) => $query->where('is_banned', 0))
+            ->when($status === 'banned', fn($query) => $query->where('is_banned', 1));
+    }
+
+    public function exportUsers(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $status = in_array($request->query('status'), ['active', 'banned'], true)
+            ? $request->query('status')
+            : '';
+        $filename = 'tomas-users-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($q, $status) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['ID', 'Nama', 'No HP', 'Status', 'Total Order']);
+
+            $this->usersQuery($q, $status)
+                ->withCount('orders')
+                ->orderByDesc('id_user')
+                ->chunk(200, function ($users) use ($output) {
+                    foreach ($users as $user) {
+                        fputcsv($output, [
+                            $user->id_user,
+                            $user->nama,
+                            $user->no_hp,
+                            $user->is_banned ? 'Banned' : 'Active',
+                            $user->orders_count,
+                        ]);
+                    }
+                });
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        $users = User::where(function ($query) use ($q) {
+                $query->where('nama', 'like', "%{$q}%")
+                    ->orWhere('no_hp', 'like', "%{$q}%");
+            })
+            ->withCount('orders')
+            ->orderByDesc('id_user')
+            ->limit(8)
+            ->get();
+
+        $tukang = Tukang::where(function ($query) use ($q) {
+                $query->where('nama', 'like', "%{$q}%")
+                    ->orWhere('kategori', 'like', "%{$q}%")
+                    ->orWhere('no_hp', 'like', "%{$q}%")
+                    ->orWhere('lokasi', 'like', "%{$q}%");
+            })
+            ->orderByDesc('id_tukang')
+            ->limit(8)
+            ->get();
+
+        $layanan = Layanan::where('nama_layanan', 'like', "%{$q}%")
+            ->orderBy('nama_layanan')
+            ->limit(8)
+            ->get();
+
+        $orders = Order::with(['user', 'tukang', 'layanan'])
+            ->where(function ($query) use ($q) {
+                $query->where('id_order', $q)
+                    ->orWhereHas('user', fn($user) => $user->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('tukang', fn($tukang) => $tukang->where('nama', 'like', "%{$q}%"))
+                    ->orWhereHas('layanan', fn($layanan) => $layanan->where('nama_layanan', 'like', "%{$q}%"));
+            })
+            ->orderByDesc('id_order')
+            ->limit(8)
+            ->get();
+
+        return view('admin.search', compact('q', 'users', 'tukang', 'layanan', 'orders'));
     }
 
     public function deleteUser($id)

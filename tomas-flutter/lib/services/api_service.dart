@@ -6,6 +6,7 @@ import '../utils/json_value.dart';
 
 class ApiService {
   static final String baseUrl = AppConfig.apiBaseUrl;
+  static const Duration _networkTimeout = Duration(seconds: 15);
 
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -24,15 +25,48 @@ class ApiService {
     return h;
   }
 
+  static Future<http.Response> _get(Uri uri, {bool auth = false}) async {
+    return http
+        .get(uri, headers: await _headers(auth: auth))
+        .timeout(_networkTimeout);
+  }
+
+  static Future<http.Response> _post(
+    Uri uri, {
+    bool auth = false,
+    Object? body,
+  }) async {
+    return http
+        .post(
+          uri,
+          headers: await _headers(auth: auth),
+          body: body,
+        )
+        .timeout(_networkTimeout);
+  }
+
+  static Future<http.Response> _put(
+    Uri uri, {
+    bool auth = false,
+    Object? body,
+  }) async {
+    return http
+        .put(
+          uri,
+          headers: await _headers(auth: auth),
+          body: body,
+        )
+        .timeout(_networkTimeout);
+  }
+
   // ── Auth ────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> login(
     String noHp,
     String password,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/login'),
-      headers: await _headers(),
       body: jsonEncode({'no_hp': noHp, 'password': password}),
     );
     return _parse(res);
@@ -43,37 +77,27 @@ class ApiService {
     String noHp,
     String password,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/register'),
-      headers: await _headers(),
       body: jsonEncode({'nama': nama, 'no_hp': noHp, 'password': password}),
     );
     return _parse(res);
   }
 
   static Future<void> logout() async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/logout'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _post(Uri.parse('$baseUrl/logout'), auth: true);
     _parse(res);
   }
 
   static Future<Map<String, dynamic>> me() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/me'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/me'), auth: true);
     return _parse(res);
   }
 
   // ── Layanan ──────────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getLayanan() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/layanan'),
-      headers: await _headers(),
-    );
+    final res = await _get(Uri.parse('$baseUrl/layanan'));
     return jsonDecode(res.body) as List;
   }
 
@@ -86,33 +110,24 @@ class ApiService {
         if (layanan != null && layanan.isNotEmpty) 'layanan': layanan,
       },
     );
-    final res = await http.get(uri, headers: await _headers());
+    final res = await _get(uri);
     return jsonDecode(res.body) as List;
   }
 
   static Future<Map<String, dynamic>> getTukangDetail(int id) async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/$id'),
-      headers: await _headers(),
-    );
+    final res = await _get(Uri.parse('$baseUrl/tukang/$id'));
     return _parse(res);
   }
 
   static Future<List<dynamic>> getTukangByLayanan() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/tukang/by-layanan'),
-      headers: await _headers(),
-    );
+    final res = await _get(Uri.parse('$baseUrl/tukang/by-layanan'));
     return jsonDecode(res.body) as List;
   }
 
   // ── Orders ───────────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getOrders() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/orders'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/orders'), auth: true);
     return jsonDecode(res.body) as List;
   }
 
@@ -128,9 +143,9 @@ class ApiService {
     String? deskripsi,
     String? metodeBayar,
   }) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/orders'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode({
         'id_tukang': idTukang,
         'id_layanan': idLayanan,
@@ -156,9 +171,9 @@ class ApiService {
     int rating,
     String? komentar,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/reviews/$idOrder'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode({'rating': rating, 'komentar': komentar}),
     );
     return _parse(res);
@@ -167,25 +182,22 @@ class ApiService {
   // ── Favorit ──────────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getFavorit() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/favorit'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/favorit'), auth: true);
     return jsonDecode(res.body) as List;
   }
 
   static Future<Map<String, dynamic>> toggleFavorit(int idTukang) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/favorit/$idTukang'),
-      headers: await _headers(auth: true),
+      auth: true,
     );
     return _parse(res);
   }
 
   static Future<bool> checkFavorit(int idTukang) async {
-    final res = await http.get(
+    final res = await _get(
       Uri.parse('$baseUrl/favorit/$idTukang/check'),
-      headers: await _headers(auth: true),
+      auth: true,
     );
     final data = _parse(res);
     return data['favorited'] == true;
@@ -194,18 +206,12 @@ class ApiService {
   // ── Chat ─────────────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getChatList() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/chat'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/chat'), auth: true);
     return jsonDecode(res.body) as List;
   }
 
   static Future<Map<String, dynamic>> getChatMessages(int idTukang) async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/chat/$idTukang'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/chat/$idTukang'), auth: true);
     return _parse(res);
   }
 
@@ -213,9 +219,9 @@ class ApiService {
     int idTukang,
     String pesan,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/chat/$idTukang'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode({'pesan': pesan}),
     );
     return _parse(res);
@@ -224,10 +230,7 @@ class ApiService {
   // ── Support Center ──────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> getSupportMessages() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/support'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/support'), auth: true);
     return _parse(res);
   }
 
@@ -235,9 +238,9 @@ class ApiService {
     String kategori,
     String pesan,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/support'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode({'kategori': kategori, 'pesan': pesan}),
     );
     return _parse(res);
@@ -249,18 +252,18 @@ class ApiService {
     int idOrder,
     String nomorReferensi,
   ) async {
-    final res = await http.post(
+    final res = await _post(
       Uri.parse('$baseUrl/pembayaran/$idOrder/pay'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode({'nomor_referensi': nomorReferensi}),
     );
     return _parse(res);
   }
 
   static Future<Map<String, dynamic>> getPaymentStatus(int idOrder) async {
-    final res = await http.get(
+    final res = await _get(
       Uri.parse('$baseUrl/pembayaran/$idOrder/status'),
-      headers: await _headers(auth: true),
+      auth: true,
     );
     return _parse(res);
   }
@@ -282,9 +285,9 @@ class ApiService {
       body['password'] = password;
       body['password_confirmation'] = passwordConfirmation ?? '';
     }
-    final res = await http.put(
+    final res = await _put(
       Uri.parse('$baseUrl/profile'),
-      headers: await _headers(auth: true),
+      auth: true,
       body: jsonEncode(body),
     );
     return _parse(res);
@@ -293,43 +296,34 @@ class ApiService {
   // ── Notifikasi ───────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getNotifikasi() async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/notifikasi'),
-      headers: await _headers(auth: true),
-    );
+    final res = await _get(Uri.parse('$baseUrl/notifikasi'), auth: true);
     return jsonDecode(res.body) as List;
   }
 
   static Future<int> getUnreadCount() async {
-    final res = await http.get(
+    final res = await _get(
       Uri.parse('$baseUrl/notifikasi/unread-count'),
-      headers: await _headers(auth: true),
+      auth: true,
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return jsonInt(body['count']);
   }
 
   static Future<void> markNotifRead(int id) async {
-    await http.put(
-      Uri.parse('$baseUrl/notifikasi/$id/read'),
-      headers: await _headers(auth: true),
-    );
+    await _put(Uri.parse('$baseUrl/notifikasi/$id/read'), auth: true);
   }
 
   static Future<void> markAllNotifRead() async {
-    await http.put(
-      Uri.parse('$baseUrl/notifikasi/read-all'),
-      headers: await _headers(auth: true),
-    );
+    await _put(Uri.parse('$baseUrl/notifikasi/read-all'), auth: true);
   }
 
   // ── FCM Token ────────────────────────────────────────────────────────────
 
   static Future<void> saveFcmToken(String fcmToken) async {
     try {
-      await http.post(
+      await _post(
         Uri.parse('$baseUrl/fcm-token'),
-        headers: await _headers(auth: true),
+        auth: true,
         body: jsonEncode({'token': fcmToken}),
       );
     } catch (_) {}

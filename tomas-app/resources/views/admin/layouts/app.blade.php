@@ -114,16 +114,16 @@
 
     {{-- Top Bar --}}
     <header class="topbar-gradient" style="height:56px;display:flex;align-items:center;padding:0 22px;gap:12px;position:sticky;top:0;z-index:20">
-        <div style="position:relative;flex:1;max-width:340px">
+        <form action="{{ route('admin.search') }}" method="GET" style="position:relative;flex:1;max-width:340px">
             <i class="fas fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:11px"></i>
-            <input type="text" placeholder="Search data, users, or services..."
+            <input type="text" name="q" value="{{ request()->routeIs('admin.search') ? request('q') : '' }}" placeholder="Search data, users, or services..."
                 style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:7px 12px 7px 28px;font-size:12px;outline:none;transition:all .2s;color:#374151"
                 onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.1)'"
                 onblur="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc';this.style.boxShadow='none'">
-        </div>
+        </form>
         <div style="flex:1"></div>
-        <button class="icon-btn"><i class="fas fa-bell" style="font-size:13px"></i></button>
-        <button class="icon-btn"><i class="fas fa-gear" style="font-size:13px"></i></button>
+        <a href="{{ route('admin.broadcast') }}" class="icon-btn" title="Broadcast pesan"><i class="fas fa-bell" style="font-size:13px"></i></a>
+        <a href="{{ route('admin.fcm') }}" class="icon-btn" title="Pengaturan Firebase Push"><i class="fas fa-gear" style="font-size:13px"></i></a>
         <div style="width:1px;height:26px;background:#e2e8f0;margin:0 4px"></div>
         <div style="display:flex;align-items:center;gap:8px">
             <div style="width:30px;height:30px;background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;box-shadow:0 2px 8px rgba(37,99,235,.4)">
