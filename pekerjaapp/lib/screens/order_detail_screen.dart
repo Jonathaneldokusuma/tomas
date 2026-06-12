@@ -185,8 +185,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _actionButtons(String status, String statusPay) {
-    if (_loading)
+    if (_loading) {
       return const Center(child: CircularProgressIndicator(color: _kBlue));
+    }
 
     List<Widget> buttons = [];
 
@@ -215,24 +216,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           () => _do(() => TukangService.updateStatus(orderId, 'in_progress')),
         ),
       ];
-    } else if (status == 'in_progress' && statusPay == 'uploaded') {
-      buttons = [
-        _btn(
-          'Konfirmasi Pembayaran',
-          Colors.green,
-          Icons.payment,
-          () => _do(() => TukangService.confirmPayment(orderId)),
-        ),
-        const SizedBox(height: 10),
-        _btn(
-          'Tandai Selesai',
-          _kBlue,
-          Icons.done_all,
-          () => _do(() => TukangService.updateStatus(orderId, 'done')),
-        ),
-      ];
     } else if (status == 'in_progress') {
       buttons = [
+        _btn(
+          'Konfirmasi Selesai',
+          Colors.green,
+          Icons.done_all,
+          () => _do(() => TukangService.confirmCompletion(orderId)),
+        ),
+        const SizedBox(height: 10),
         _btn(
           'Tandai Selesai',
           _kBlue,

@@ -69,6 +69,14 @@ class TukangDashboardController extends Controller
         $tukang = $this->getTukang($request);
         if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
 
+        if ((float) ($tukang->deposit_balance ?? 0) < (float) ($tukang->deposit_minimum ?? 100000)) {
+            return response()->json([
+                'message' => 'Deposit belum memenuhi minimum untuk menerima pesanan',
+                'deposit_balance' => (float) ($tukang->deposit_balance ?? 0),
+                'deposit_minimum' => (float) ($tukang->deposit_minimum ?? 100000),
+            ], 400);
+        }
+
         $order = Order::where('id_order', $id)
             ->where('id_tukang', $tukang->id_tukang)
             ->first();
@@ -151,12 +159,19 @@ class TukangDashboardController extends Controller
 
         if (!$order) return response()->json(['message' => 'Order tidak ditemukan'], 404);
 
-        $order->update(['status' => $request->status]);
+        if ($request->status === 'done') {
+            $order->tukang_completed_at = now();
+            $order->status = 'done';
+            $order->save();
+            $this->finalizeOrderIfReady($order->fresh(['tukang']));
+        } else {
+            $order->update(['status' => $request->status]);
+        }
 
         $statusMsg   = $request->status === 'in_progress'
             ? 'Tukang ' . $tukang->nama . ' sedang mengerjakan pesanan Anda.'
-            : 'Tukang ' . $tukang->nama . ' telah menyelesaikan pekerjaan.';
-        $statusTitle = $request->status === 'in_progress' ? 'Pekerjaan Dimulai 🔧' : 'Pekerjaan Selesai ✅';
+            : 'Tukang ' . $tukang->nama . ' sudah menandai pekerjaannya selesai. Menunggu konfirmasi pelanggan.';
+        $statusTitle = $request->status === 'in_progress' ? 'Pekerjaan Dimulai 🔧' : 'Konfirmasi Selesai Menunggu 👀';
 
         // ── Notifikasi in-app ke user ──
         Notifikasi::kirim($order->id_user, $statusTitle, $statusMsg, 'order');
@@ -170,8 +185,8 @@ class TukangDashboardController extends Controller
         return response()->json(['message' => 'Status diperbarui', 'order' => $order]);
     }
 
-    // POST /api/tukang/orders/{id}/confirm-payment
-    public function confirmPayment(Request $request, $id)
+    // POST /api/tukang/orders/{id}/confirm-completion
+    public function confirmCompletion(Request $request, $id)
     {
         $tukang = $this->getTukang($request);
         if (!$tukang) return response()->json(['message' => 'Unauthorized'], 401);
@@ -181,29 +196,19 @@ class TukangDashboardController extends Controller
             ->first();
 
         if (!$order) return response()->json(['message' => 'Order tidak ditemukan'], 404);
-        if ($order->status_payment !== 'uploaded') {
-            return response()->json(['message' => 'Belum ada bukti bayar dari user'], 400);
+        if (!in_array($order->status, ['in_progress', 'done'])) {
+            return response()->json(['message' => 'Order belum dalam proses'], 400);
         }
 
-        $order->update(['status_payment' => 'confirmed', 'status' => 'done']);
+        if (! $order->tukang_completed_at) {
+            $order->tukang_completed_at = now();
+            $order->status = 'done';
+            $order->save();
+        }
 
-        // ── Notifikasi in-app ke user ──
-        Notifikasi::kirim(
-            $order->id_user,
-            'Pembayaran Dikonfirmasi ✅',
-            'Pembayaran Anda telah dikonfirmasi oleh tukang. Terima kasih!',
-            'order'
-        );
+        $this->finalizeOrderIfReady($order->fresh(['tukang']));
 
-        // ── FCM push ke user ──
-        $tokens = FcmToken::getTokens('user', $order->id_user);
-        FcmService::sendToMany($tokens,
-            'Pembayaran Dikonfirmasi ✅',
-            'Pembayaran Anda telah dikonfirmasi oleh tukang. Terima kasih!',
-            ['type' => 'payment_confirmed', 'id_order' => (string) $id]
-        );
-
-        return response()->json(['message' => 'Pembayaran dikonfirmasi', 'order' => $order]);
+        return response()->json(['message' => 'Konfirmasi selesai dari tukang diterima', 'order' => $order->fresh()]);
     }
 
     // GET /api/tukang/profile
@@ -480,6 +485,11 @@ class TukangDashboardController extends Controller
         $ordersQuery = Order::where('id_tukang', $tukang->id_tukang);
         $totalOrders = (clone $ordersQuery)->count();
         $completedOrders = (clone $ordersQuery)->where('status', 'done')->count();
+        $depositPending = (clone $ordersQuery)
+            ->whereNull('deposit_deducted_at')
+            ->whereNotNull('user_completed_at')
+            ->whereNotNull('tukang_completed_at')
+            ->sum('deposit_fee');
         $portfolioItems = Portfolio::where('id_tukang', $tukang->id_tukang)
             ->orderByDesc('id_portfolio')
             ->get();
@@ -498,6 +508,10 @@ class TukangDashboardController extends Controller
                 'reviews_count' => $reviews->count(),
                 'avg_rating' => $averageRating,
                 'rank' => $rank,
+                'deposit_balance' => (float) ($tukang->deposit_balance ?? 0),
+                'deposit_minimum' => (float) ($tukang->deposit_minimum ?? 100000),
+                'deposit_ready' => (float) ($tukang->deposit_balance ?? 0) >= (float) ($tukang->deposit_minimum ?? 100000),
+                'deposit_pending_deduction' => (float) $depositPending,
             ],
             'badges' => array_values(array_merge(
                 $this->buildBadges($tukang, $completedOrders, $reviews->count(), $averageRating, $portfolioItems->count(), $rank),
@@ -662,5 +676,45 @@ class TukangDashboardController extends Controller
         $position = $scores->search(fn ($row) => (int) $row['id'] === (int) $current->id_tukang);
 
         return $position === false ? 0 : $position + 1;
+    }
+
+    private function finalizeOrderIfReady(Order $order): void
+    {
+        if ($order->deposit_deducted_at || ! $order->user_completed_at || ! $order->tukang_completed_at) {
+            return;
+        }
+
+        $order->loadMissing('tukang');
+        $tukang = $order->tukang;
+        if (! $tukang) {
+            return;
+        }
+
+        $fee = (float) ($order->deposit_fee ?? 0);
+        if ($fee <= 0) {
+            return;
+        }
+
+        $tukang->deposit_balance = max(0, (float) $tukang->deposit_balance - $fee);
+        $tukang->save();
+
+        $order->deposit_deducted_at = now();
+        $order->status = 'done';
+        $order->save();
+
+        Notifikasi::kirim(
+            $order->id_user,
+            'Pesanan Selesai',
+            'Pesanan sudah selesai dari kedua pihak. Deposit tukang berhasil diproses.',
+            'order'
+        );
+
+        $tokens = FcmToken::getTokens('user', $order->id_user);
+        FcmService::sendToMany(
+            $tokens,
+            'Pesanan Selesai',
+            'Pesanan sudah selesai dari kedua pihak. Deposit tukang berhasil diproses.',
+            ['type' => 'order_done', 'id_order' => (string) $order->id_order]
+        );
     }
 }

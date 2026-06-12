@@ -72,7 +72,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
       case 'in_progress':
         return 'Tukang sedang mengerjakan pesanan Anda.';
       case 'done':
-        return 'Pekerjaan selesai! Berikan ulasan Anda.';
+        return 'Pesanan selesai dan deposit tukang sudah diproses.';
+      case 'waiting_user':
+        return 'Menunggu konfirmasi selesai dari Anda.';
+      case 'waiting_tukang':
+        return 'Menunggu konfirmasi selesai dari tukang.';
       case 'rejected':
         return 'Maaf, pesanan Anda ditolak oleh tukang.';
       default:
@@ -280,6 +284,52 @@ class _OrderItemState extends State<_OrderItem> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                if (widget.order.status == 'in_progress' ||
+                    widget.order.status == 'done')
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        final res = await ApiService.confirmOrderCompletion(
+                          widget.order.idOrder,
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                res['message'] ?? 'Konfirmasi selesai terkirim',
+                              ),
+                            ),
+                          );
+                          widget.onReviewed();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F2937),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Konfirmasi Selesai',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 const SizedBox(height: 6),

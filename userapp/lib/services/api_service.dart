@@ -268,6 +268,14 @@ class ApiService {
     return _parse(res);
   }
 
+  static Future<Map<String, dynamic>> confirmOrderCompletion(int idOrder) async {
+    final res = await _post(
+      Uri.parse('$baseUrl/orders/$idOrder/confirm-completion'),
+      auth: true,
+    );
+    return _parse(res);
+  }
+
   // ── Profile ──────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> updateProfile({

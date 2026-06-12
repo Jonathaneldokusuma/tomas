@@ -34,7 +34,7 @@ Route::prefix('tukang')->group(function () {
     Route::post('/orders/{id}/accept',          [TukangDashboardController::class, 'acceptOrder']);
     Route::post('/orders/{id}/reject',          [TukangDashboardController::class, 'rejectOrder']);
     Route::post('/orders/{id}/status',          [TukangDashboardController::class, 'updateStatus']);
-    Route::post('/orders/{id}/confirm-payment', [TukangDashboardController::class, 'confirmPayment']);
+    Route::post('/orders/{id}/confirm-completion', [TukangDashboardController::class, 'confirmCompletion']);
     Route::get('/profile',                      [TukangDashboardController::class, 'profile']);
     Route::put('/profile',                      [TukangDashboardController::class, 'updateProfile']);
     Route::post('/upload-ktp',                  [TukangDashboardController::class, 'uploadKtp']);
@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders',                      [OrderController::class, 'store']);
     Route::get('/orders/{id}',                  [OrderController::class, 'show']);
     Route::post('/orders/{id}/upload-bukti',    [OrderController::class, 'uploadBuktiBayar']);
+    Route::post('/orders/{id}/confirm-completion', [OrderController::class, 'confirmCompletion']);
 
     Route::post('/reviews/{id_order}', [ReviewController::class, 'store']);
 

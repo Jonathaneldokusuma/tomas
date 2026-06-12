@@ -174,10 +174,10 @@ class TukangService {
     return {'statusCode': res.statusCode, ...jsonDecode(res.body)};
   }
 
-  static Future<Map<String, dynamic>> confirmPayment(int id) async {
+  static Future<Map<String, dynamic>> confirmCompletion(int id) async {
     final res = await http
         .post(
-          Uri.parse('$baseUrl/tukang/orders/$id/confirm-payment'),
+          Uri.parse('$baseUrl/tukang/orders/$id/confirm-completion'),
           headers: await _headers(),
         )
         .timeout(_networkTimeout);

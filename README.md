@@ -1,10 +1,11 @@
 # TOMAS
 
 TOMAS adalah aplikasi pemesanan jasa tukang yang terdiri dari admin panel, aplikasi pengguna, dan aplikasi pekerja.
+Sistemnya sudah mencakup alur pesanan, verifikasi tukang, badge, pembayaran, konfirmasi selesai dua arah, dan deposit tukang.
 
 ## Struktur Repository
 
-- `admin-panel` - backend Laravel, REST API, dan dashboard admin.
+- `admin-panel` - backend Laravel, REST API, dashboard admin, verifikasi, badge, dan deposit.
 - `userapp` - aplikasi Flutter untuk pengguna yang memesan jasa.
 - `pekerjaapp` - aplikasi Flutter untuk pekerja/tukang yang menerima pekerjaan.
 - `Dockerfile` - image production untuk Railway.
