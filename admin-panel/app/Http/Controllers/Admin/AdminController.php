@@ -12,6 +12,7 @@ use App\Models\Chat;
 use App\Models\SupportChat;
 use App\Models\Notifikasi;
 use App\Models\BroadcastMessage;
+use App\Models\BadgeAward;
 use App\Models\FcmToken;
 use App\Services\FcmService;
 use Illuminate\Database\QueryException;
@@ -102,6 +103,7 @@ class AdminController extends Controller
         $stats = [
             'users' => 0, 'tukang' => 0, 'tukang_aktif' => 0,
             'orders' => 0, 'reviews' => 0, 'orders_total' => 0, 'avg_rating' => 0,
+            'pending_verification' => 0, 'badges' => 0,
         ];
         $tukangList = collect();
         $tukangPerformance = collect();
@@ -142,6 +144,8 @@ class AdminController extends Controller
             'reviews'      => $safe(fn() => $reviewsQ->count(), 0),
             'orders_total' => $safe(fn() => Order::count(), 0),
             'avg_rating'   => $safe(fn() => round((float) $reviewsQ->avg('rating'), 1), 0),
+            'pending_verification' => $safe(fn() => Tukang::where('status_verifikasi', 'pending')->count(), 0),
+            'badges'      => $safe(fn() => BadgeAward::count(), 0),
         ];
 
         $tukangList = $safe(fn() => Tukang::orderBy('nama')->get(['id_tukang', 'nama']), collect());

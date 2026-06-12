@@ -100,6 +100,8 @@
 $statCards = [
     ['label'=>'Total Pengguna',   'val'=>number_format($stats['users']),          'icon'=>'fa-users',             'ibg'=>'#eff6ff','ic'=>'#2563eb','sub'=>'Terdaftar'],
     ['label'=>'Pekerja Aktif',    'val'=>number_format($stats['tukang_aktif']),   'icon'=>'fa-screwdriver-wrench','ibg'=>'#fff7ed','ic'=>'#ea580c','sub'=>'dari '.$stats['tukang'].' total'],
+    ['label'=>'Verifikasi Pending','val'=>number_format($stats['pending_verification']),'icon'=>'fa-id-card-clip','ibg'=>'#fef3c7','ic'=>'#b45309','sub'=>'Menunggu review'],
+    ['label'=>'Badge Aktif',      'val'=>number_format($stats['badges']),        'icon'=>'fa-award',            'ibg'=>'#fdf4ff','ic'=>'#9333ea','sub'=>'User + tukang'],
     ['label'=>'Pesanan',          'val'=>number_format($stats['orders']),         'icon'=>'fa-receipt',           'ibg'=>'#f0fdf4','ic'=>'#16a34a','sub'=>$periodLabel],
     ['label'=>'Ulasan',           'val'=>number_format($stats['reviews']),        'icon'=>'fa-star',              'ibg'=>'#fefce8','ic'=>'#ca8a04','sub'=>$periodLabel],
     ['label'=>'Rating Rata-rata', 'val'=>($stats['avg_rating'] ?: '—'),           'icon'=>'fa-chart-line',        'ibg'=>'#fdf4ff','ic'=>'#9333ea','sub'=>'Dari ulasan'],
@@ -120,6 +122,27 @@ $statCards = [
         <div style="font-size:10px;color:#9ca3af;margin-top:2px">{{ $c['sub'] }}</div>
     </div>
     @endforeach
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px">
+    <a href="{{ route('admin.tukang.verifikasi') }}" style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;text-decoration:none;color:inherit;display:block">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#0d1b2e">Buka Verifikasi</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:3px">Lihat foto KTP dan selfie tukang.</div>
+            </div>
+            <i class="fas fa-arrow-right" style="color:#2563eb"></i>
+        </div>
+    </a>
+    <a href="{{ route('admin.badges') }}" style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;text-decoration:none;color:inherit;display:block">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#0d1b2e">Kelola Badge</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:3px">Tambah badge user atau tukang secara live.</div>
+            </div>
+            <i class="fas fa-award" style="color:#9333ea"></i>
+        </div>
+    </a>
 </div>
 
 
