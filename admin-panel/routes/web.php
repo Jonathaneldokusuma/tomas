@@ -67,6 +67,7 @@ Route::post('/admin/logout',[AdminController::class, 'logout'])->name('admin.log
 // Protected admin routes
 Route::prefix('admin')->middleware('admin')->group(function () {
     Route::get('/dashboard',           [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/analytics',           [AdminController::class, 'analytics'])->name('admin.analytics');
     Route::get('/search',              [AdminController::class, 'search'])->name('admin.search');
     Route::get('/users',               [AdminController::class, 'users'])->name('admin.users');
     Route::get('/users/export',        [AdminController::class, 'exportUsers'])->name('admin.users.export');

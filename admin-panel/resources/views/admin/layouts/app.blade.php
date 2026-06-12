@@ -41,6 +41,9 @@
         <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
             <i class="fas fa-table-columns"></i><span>Dashboard</span>
         </a>
+        <a href="{{ route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">
+            <i class="fas fa-chart-line"></i><span>Analytics</span>
+        </a>
         <a href="{{ route('admin.tukang') }}" class="nav-item {{ request()->routeIs('admin.tukang*') ? 'active' : '' }}">
             <i class="fas fa-screwdriver-wrench"></i><span>Services</span>
         </a>

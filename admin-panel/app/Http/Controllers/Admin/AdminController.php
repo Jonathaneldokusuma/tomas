@@ -275,6 +275,137 @@ class AdminController extends Controller
         ));
     }
 
+    public function analytics(Request $request)
+    {
+        $period = in_array($request->query('period'), ['today', 'week', 'month', 'all'], true)
+            ? $request->query('period')
+            : 'month';
+
+        $from = match ($period) {
+            'today' => now()->startOfDay(),
+            'week' => now()->startOfWeek(),
+            'month' => now()->startOfMonth(),
+            default => null,
+        };
+
+        $periodLabel = match ($period) {
+            'today' => 'Hari Ini (' . now()->format('d M Y') . ')',
+            'week' => 'Minggu Ini (' . now()->startOfWeek()->format('d M') . ' – ' . now()->endOfWeek()->format('d M Y') . ')',
+            'month' => 'Bulan Ini (' . now()->format('F Y') . ')',
+            default => 'Semua Waktu',
+        };
+
+        $baseOrders = Order::query()->when($from, fn ($q) => $q->where('created_at', '>=', $from));
+
+        $chartLabels = [];
+        $orderTrend = [];
+        $revenueTrend = [];
+
+        if ($period === 'today') {
+            for ($hour = 0; $hour < 24; $hour += 2) {
+                $start = now()->startOfDay()->addHours($hour);
+                $end = $start->copy()->addHours(2);
+                $slice = Order::query()->whereBetween('created_at', [$start, $end]);
+                $chartLabels[] = str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00';
+                $orderTrend[] = (clone $slice)->count();
+                $revenueTrend[] = (float) (clone $slice)->sum('total');
+            }
+        } elseif ($period === 'week') {
+            for ($i = 6; $i >= 0; $i--) {
+                $day = now()->subDays($i);
+                $slice = Order::query()->whereDate('created_at', $day->toDateString());
+                $chartLabels[] = $day->format('D');
+                $orderTrend[] = (clone $slice)->count();
+                $revenueTrend[] = (float) (clone $slice)->sum('total');
+            }
+        } elseif ($period === 'month') {
+            for ($i = 29; $i >= 0; $i--) {
+                $day = now()->subDays($i);
+                $slice = Order::query()->whereDate('created_at', $day->toDateString());
+                $chartLabels[] = $day->format('d/m');
+                $orderTrend[] = (clone $slice)->count();
+                $revenueTrend[] = (float) (clone $slice)->sum('total');
+            }
+        } else {
+            for ($i = 11; $i >= 0; $i--) {
+                $month = now()->subMonths($i);
+                $slice = Order::query()
+                    ->whereYear('created_at', $month->year)
+                    ->whereMonth('created_at', $month->month);
+                $chartLabels[] = $month->format('M Y');
+                $orderTrend[] = (clone $slice)->count();
+                $revenueTrend[] = (float) (clone $slice)->sum('total');
+            }
+        }
+
+        $grossRevenue = (float) (clone $baseOrders)->sum('total');
+        $netRevenue = (float) (clone $baseOrders)->whereIn('status_payment', ['confirmed', 'paid'])->sum('total');
+        $completedOrders = (clone $baseOrders)->whereIn('status', ['done', 'selesai'])->count();
+        $pendingOrders = (clone $baseOrders)->whereIn('status_payment', ['pending', 'waiting'])->count();
+        $cancelledOrders = (clone $baseOrders)->whereIn('status', ['cancelled', 'batal'])->count();
+
+        $activeWorkers = Tukang::where('status_aktif', 1)->count();
+        $registeredWorkers = Tukang::count();
+        $approvedWorkers = Tukang::where('status_verifikasi', 'verified')->count();
+        $rejectedWorkers = Tukang::where('status_verifikasi', 'rejected')->count();
+
+        $statusBreakdown = [
+            'Selesai' => $completedOrders,
+            'Pending' => $pendingOrders,
+            'Batal' => $cancelledOrders,
+            'Lainnya' => max(0, (clone $baseOrders)->count() - $completedOrders - $pendingOrders - $cancelledOrders),
+        ];
+
+        $difficultyBreakdown = Order::query()
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
+            ->selectRaw('COALESCE(tingkat_kerumitan, "Belum Diisi") as label, COUNT(*) as total')
+            ->groupBy('label')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get();
+
+        $topServices = Order::query()
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
+            ->selectRaw('id_layanan, COUNT(*) as total')
+            ->with('layanan')
+            ->groupBy('id_layanan')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => [
+                'name' => optional($row->layanan)->nama_layanan ?? 'Layanan #' . $row->id_layanan,
+                'total' => (int) $row->total,
+            ]);
+
+        $topWorkers = Tukang::withCount(['orders as orders_count' => function ($q) use ($from) {
+                $q->when($from, fn ($x) => $x->where('created_at', '>=', $from));
+            }])
+            ->orderByDesc('orders_count')
+            ->limit(8)
+            ->get();
+
+        return view('admin.analytics', compact(
+            'period',
+            'periodLabel',
+            'grossRevenue',
+            'netRevenue',
+            'completedOrders',
+            'pendingOrders',
+            'cancelledOrders',
+            'activeWorkers',
+            'registeredWorkers',
+            'approvedWorkers',
+            'rejectedWorkers',
+            'chartLabels',
+            'orderTrend',
+            'revenueTrend',
+            'statusBreakdown',
+            'difficultyBreakdown',
+            'topServices',
+            'topWorkers'
+        ));
+    }
+
     // ─── Users ───────────────────────────────────────────────────────────────
 
     public function users(Request $request)
