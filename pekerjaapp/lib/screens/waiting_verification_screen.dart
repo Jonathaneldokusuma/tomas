@@ -62,10 +62,23 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
         return;
       }
 
+      if (latest == 'rejected') {
+        await TukangService.logout();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(
+          context,
+          '/login',
+          arguments: {
+            'message':
+                'Register ditolak oleh admin. Silakan daftar ulang atau hubungi admin.',
+          },
+        );
+        return;
+      }
+
       setState(() {
-        _message = latest == 'rejected'
-            ? 'Register ditolak oleh admin. Kamu bisa daftar ulang setelah memperbaiki data.'
-            : 'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
+        _message =
+            'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
       });
     } catch (_) {}
   }
@@ -122,7 +135,7 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                _status == 'rejected' ? 'Register Ditolak' : 'Menunggu Verifikasi',
+                'Menunggu Verifikasi',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -159,13 +172,7 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
                     const SizedBox(height: 12),
                     _checklist('Dokumen KTP telah diupload', done: true),
                     const SizedBox(height: 12),
-                    _checklist(
-                      _status == 'rejected'
-                          ? 'Register ditolak admin'
-                          : 'Sedang proses review oleh admin',
-                      active: _status != 'rejected',
-                      done: _status == 'rejected',
-                    ),
+                    _checklist('Sedang proses review oleh admin', active: true),
                     const SizedBox(height: 12),
                     _checklist('Akun aktif & siap digunakan'),
                   ],
@@ -186,14 +193,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    _status == 'rejected'
-                        ? 'Daftar Ulang'
-                        : 'Batalkan & Kembali',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                  child: const Text(
+                    'Batalkan & Kembali',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ),
               ),

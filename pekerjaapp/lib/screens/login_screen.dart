@@ -19,6 +19,15 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['message'] != null) {
+      _error = args['message'].toString();
+    }
+  }
+
+  @override
   void dispose() {
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
