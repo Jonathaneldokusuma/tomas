@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\BadgeController;
 use App\Http\Controllers\Admin\UserSupportController;
 
 // Redirect root ke admin login
-Route::get('/', fn() => redirect()->route('admin.login'));
+Route::redirect('/', '/admin/login');
 
 // Auth
 Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
@@ -57,7 +57,7 @@ Route::get('/notifikasi',        [NotifikasiController::class, 'index'])->name('
 Route::get('/notifikasi/unread', [NotifikasiController::class, 'unread'])->name('notifikasi.unread');
 
 // ── Admin ──────────────────────────────────────────────────
-Route::get('/admin', fn() => redirect()->route('admin.login'));
+Route::redirect('/admin', '/admin/login');
 
 // Auth (no middleware)
 Route::get('/admin/login',  [AdminController::class, 'showLogin'])->name('admin.login');

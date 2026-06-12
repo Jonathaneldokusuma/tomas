@@ -36,7 +36,7 @@ done
 # ── Optimize for production ────────────────────────────────────────────────
 echo "==> Caching config & routes..."
 php artisan config:cache
-php artisan route:cache
+php artisan route:cache || echo "==> Route cache skipped; continuing startup"
 php artisan view:cache
 
 # ── Create storage symlink ─────────────────────────────────────────────────
