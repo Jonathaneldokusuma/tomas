@@ -7,7 +7,7 @@ App ini membaca URL backend dari `--dart-define`, jadi build production harus me
 Contoh:
 
 ```bash
-cd "d:\laravel web app\tomas-flutter-tukang"
+cd pekerjaapp
 flutter build apk --release --dart-define=TOMAS_SERVER_URL=https://backend-kamu.com
 ```
 
@@ -19,5 +19,5 @@ flutter run --dart-define=TOMAS_SERVER_URL=http://127.0.0.1:8000
 
 ## Catatan
 
-- Backend API tetap berasal dari project Laravel `tomas-app`
+- Backend API tetap berasal dari `admin-panel`
 - Admin panel web ada di `https://backend-kamu.com/admin`

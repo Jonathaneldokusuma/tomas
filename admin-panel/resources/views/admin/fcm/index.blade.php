@@ -6,7 +6,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">
         <div>
             <h1 style="font-size:20px;font-weight:700;color:#1e293b">Firebase Push</h1>
-            <p style="color:#64748b;font-size:13px;margin-top:2px">Kelola service account Firebase untuk push notification HP user dan tukang</p>
+            <p style="color:#64748b;font-size:13px;margin-top:2px">Kelola service account Firebase untuk push notification HP user dan pekerja</p>
         </div>
         <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600">
             <i class="fas fa-bell" style="margin-right:6px"></i>Push akan aktif setelah file service account valid
@@ -125,8 +125,9 @@
                 </div>
 
                 <div style="margin-top:18px;background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:14px 16px;color:#9a3412;font-size:13px;line-height:1.55">
-                    Upload file JSON dari <strong>Firebase Console → Project Settings → Service Accounts → Generate new private key</strong>.
-                    Setelah file tersimpan, backend akan otomatis membaca project ID dan private key dari file atau database untuk mengirim push notification ke HP user dan tukang.
+                    Upload file JSON dari <strong>Firebase Console → Project Settings → Service Accounts → Generate new private key</strong>,
+                    atau set env Railway <strong>FIREBASE_SERVICE_ACCOUNT_JSON</strong> dengan isi JSON/base64 JSON.
+                    Backend akan otomatis membaca project ID dan private key dari environment, file, atau database untuk mengirim push notification ke HP user dan pekerja.
                 </div>
             </div>
         </div>

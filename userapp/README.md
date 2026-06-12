@@ -16,11 +16,11 @@ firebase login
 Jalankan dari folder ini:
 
 ```bash
-cd "d:\laravel web app\tomas-flutter"
-firebase use apk-encrypt-d9254
+cd userapp
+firebase use tomas-app-2e185
 ```
 
-File `.firebaserc` sudah diarahkan ke project `apk-encrypt-d9254`, jadi perintah di atas cukup untuk memastikan CLI memakai project yang benar.
+File `.firebaserc` sudah diarahkan ke project `tomas-app-2e185`, jadi perintah di atas cukup untuk memastikan CLI memakai project yang benar.
 
 ### 3. Build web dengan URL backend production
 

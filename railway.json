@@ -1,0 +1,53 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "watchPatterns": [
+      "admin-panel/**",
+      "railway.json"
+    ],
+    "nixpacksPlan": {
+      "providers": [
+        "php"
+      ],
+      "phases": {
+        "setup": {
+          "nixPkgs": [
+            "php81",
+            "php81Extensions.pdo_mysql",
+            "php81Extensions.mbstring",
+            "php81Extensions.tokenizer",
+            "php81Extensions.xml",
+            "php81Extensions.ctype",
+            "php81Extensions.json",
+            "php81Extensions.bcmath",
+            "php81Extensions.curl",
+            "php81Extensions.openssl",
+            "php81Extensions.fileinfo",
+            "php81Extensions.gd",
+            "php81Extensions.zip",
+            "php81Extensions.intl",
+            "composer"
+          ]
+        },
+        "install": {
+          "cmds": [
+            "cd admin-panel && composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist"
+          ]
+        },
+        "build": {
+          "cmds": [
+            "cd admin-panel && php artisan config:clear && php artisan route:clear && php artisan view:clear"
+          ]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "cd admin-panel && bash start.sh",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

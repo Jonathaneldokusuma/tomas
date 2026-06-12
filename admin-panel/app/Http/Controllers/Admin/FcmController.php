@@ -17,6 +17,7 @@ class FcmController extends Controller
     {
         $serviceAccountPath = storage_path('firebase-service-account.json');
         $altServiceAccountPath = storage_path('app/firebase-service-account.json');
+        $envJson = $this->readEnvServiceAccount();
         $storedJson = $this->readStoredServiceAccount();
 
         $activePath = file_exists($serviceAccountPath)
@@ -25,14 +26,15 @@ class FcmController extends Controller
 
         $serviceAccount = $activePath
             ? $this->readServiceAccount($activePath)
-            : $storedJson;
+            : ($envJson ?: $storedJson);
 
         $status = [
             'project_id' => env('FCM_PROJECT_ID') ?: ($serviceAccount['project_id'] ?? null),
             'file_exists' => $activePath !== null,
+            'stored_in_env' => !empty($envJson),
             'stored_in_db' => !empty($storedJson),
-            'service_account_active' => $activePath !== null || !empty($storedJson),
-            'service_account_source' => $activePath ? 'file' : (!empty($storedJson) ? 'database' : null),
+            'service_account_active' => $activePath !== null || !empty($envJson) || !empty($storedJson),
+            'service_account_source' => $activePath ? 'file' : (!empty($envJson) ? 'environment' : (!empty($storedJson) ? 'database' : null)),
             'file_path'   => $activePath,
             'token_users' => FcmToken::where('user_type', 'user')->count(),
             'token_tukang' => FcmToken::where('user_type', 'tukang')->count(),
@@ -49,9 +51,9 @@ class FcmController extends Controller
 
         $file = $request->file('service_account');
         $contents = file_get_contents($file->getRealPath());
-        $decoded = json_decode($contents, true);
+        $decoded = $this->decodeServiceAccountJson($contents);
 
-        if (!is_array($decoded) || empty($decoded['client_email']) || empty($decoded['private_key'])) {
+        if (!$decoded) {
             return back()->with('error', 'File service account Firebase tidak valid.');
         }
 
@@ -144,13 +146,40 @@ class FcmController extends Controller
             $stored = SystemSetting::where('setting_key', 'firebase_service_account_json')->value('setting_value');
 
             if (is_string($stored) && $stored !== '') {
-                $json = json_decode(Crypt::decryptString($stored), true);
-                return is_array($json) ? $json : [];
+                return $this->decodeServiceAccountJson(Crypt::decryptString($stored)) ?: [];
             }
         } catch (\Throwable $e) {
             // Ignore DB or decrypt errors and fall back to file storage.
         }
 
         return [];
+    }
+
+    private function readEnvServiceAccount(): array
+    {
+        return $this->decodeServiceAccountJson(
+            env('FIREBASE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        ) ?: [];
+    }
+
+    private function decodeServiceAccountJson(?string $value): ?array
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $candidate = trim($value);
+        $json = json_decode($candidate, true);
+
+        if (!is_array($json)) {
+            $decoded = base64_decode($candidate, true);
+            $json = $decoded ? json_decode($decoded, true) : null;
+        }
+
+        if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+            return $json;
+        }
+
+        return null;
     }
 }

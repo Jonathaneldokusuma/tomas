@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Log;
  *
  * Setup steps (Railway / production):
  *   1. Go to Firebase Console → Project Settings → Service Accounts
- *   2. Click "Generate new private key" → save as storage/firebase-service-account.json
- *   3. Set FCM_PROJECT_ID=apk-encrypt-d9254 in .env / Railway env vars
- *   4. Add GOOGLE_APPLICATION_CREDENTIALS=storage/firebase-service-account.json in .env
+ *   2. Click "Generate new private key"
+ *   3. Upload it in Admin Panel → Firebase Push, or set FIREBASE_SERVICE_ACCOUNT_JSON in Railway
+ *   4. Set FCM_PROJECT_ID=tomas-app-2e185 only if the JSON project_id should be overridden
  *
  * For now, FCM will silently skip if not configured (no crash).
  */
@@ -135,11 +135,17 @@ class FcmService
 
     private static function loadCredentials(): ?array
     {
+        $envJson = env('FIREBASE_SERVICE_ACCOUNT_JSON') ?: env('GOOGLE_APPLICATION_CREDENTIALS_JSON');
+        $decodedEnvJson = self::decodeServiceAccountJson($envJson);
+        if ($decodedEnvJson) {
+            return $decodedEnvJson;
+        }
+
         try {
             $stored = SystemSetting::where('setting_key', 'firebase_service_account_json')->value('setting_value');
             if (is_string($stored) && $stored !== '') {
-                $json = json_decode(Crypt::decryptString($stored), true);
-                if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+                $json = self::decodeServiceAccountJson(Crypt::decryptString($stored));
+                if ($json) {
                     return $json;
                 }
             }
@@ -158,10 +164,31 @@ class FcmService
                 continue;
             }
 
-            $json = json_decode(file_get_contents($path), true);
-            if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+            $json = self::decodeServiceAccountJson(file_get_contents($path));
+            if ($json) {
                 return $json;
             }
+        }
+
+        return null;
+    }
+
+    private static function decodeServiceAccountJson(?string $value): ?array
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $candidate = trim($value);
+        $json = json_decode($candidate, true);
+
+        if (!is_array($json)) {
+            $decoded = base64_decode($candidate, true);
+            $json = $decoded ? json_decode($decoded, true) : null;
+        }
+
+        if (is_array($json) && !empty($json['client_email']) && !empty($json['private_key'])) {
+            return $json;
         }
 
         return null;

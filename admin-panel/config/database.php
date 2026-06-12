@@ -45,13 +45,13 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            // Supports: standard DB_* vars, Railway MYSQL_* vars, or DATABASE_URL
+            // Supports: standard DB_* vars, Railway MYSQL_* / MYSQL* vars, or DATABASE_URL
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', env('MYSQL_HOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('MYSQL_PORT', '3306')),
-            'database' => env('DB_DATABASE', env('MYSQL_DATABASE', 'forge')),
-            'username' => env('DB_USERNAME', env('MYSQL_USER', 'forge')),
-            'password' => env('DB_PASSWORD', env('MYSQL_PASSWORD', '')),
+            'host' => env('DB_HOST', env('MYSQL_HOST', env('MYSQLHOST', '127.0.0.1'))),
+            'port' => env('DB_PORT', env('MYSQL_PORT', env('MYSQLPORT', '3306'))),
+            'database' => env('DB_DATABASE', env('MYSQL_DATABASE', env('MYSQLDATABASE', 'forge'))),
+            'username' => env('DB_USERNAME', env('MYSQL_USER', env('MYSQLUSER', 'forge'))),
+            'password' => env('DB_PASSWORD', env('MYSQL_PASSWORD', env('MYSQLPASSWORD', ''))),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,14 +10,22 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await NotificationService.init();
+  await _bootstrapNotifications();
   runApp(
     ChangeNotifierProvider(
       create: (_) => AuthProvider(),
       child: const TomasApp(),
     ),
   );
+}
+
+Future<void> _bootstrapNotifications() async {
+  try {
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
+    await NotificationService.init().timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Firebase must never block the app from opening.
+  }
 }
 
 class TomasApp extends StatelessWidget {

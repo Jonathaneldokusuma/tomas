@@ -44,10 +44,9 @@ Future<void> _showRemoteMessageNotification(
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await local.initialize(const InitializationSettings(
-      android: android,
-      iOS: ios,
-    ));
+    await local.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+    );
   }
 
   const channel = AndroidNotificationChannel(
@@ -84,8 +83,12 @@ Future<void> _showRemoteMessageNotification(
 /// Handle FCM background messages (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  await _showRemoteMessageNotification(message);
+  try {
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
+    await _showRemoteMessageNotification(message);
+  } catch (_) {
+    // Ignore background notification failures from incomplete Firebase config.
+  }
 }
 
 class NotificationService {
