@@ -156,6 +156,10 @@ class AdminController extends Controller
             ->when($from,     fn($q) => $q->where('created_at', '>=', $from))
             ->when($tukangId, fn($q) => $q->where('id_tukang',  $tukangId));
 
+        $paymentsQ = Pembayaran::query()
+            ->when($from, fn($q) => $q->whereHas('order', fn($oq) => $oq->where('created_at', '>=', $from)))
+            ->when($tukangId, fn($q) => $q->whereHas('order', fn($oq) => $oq->where('id_tukang', $tukangId)));
+
         $reviewsQ = Review::query()
             ->when($from || $tukangId, fn($q) =>
                 $q->whereHas('order', fn($oq) =>
@@ -177,27 +181,27 @@ class AdminController extends Controller
         ];
 
         $finance = [
-            'gross_revenue' => $safe(fn() => (float) Pembayaran::where('status', 'paid')->sum('jumlah'), 0),
-            'pending_revenue' => $safe(fn() => (float) Pembayaran::where('status', 'pending')->sum('jumlah'), 0),
-            'failed_revenue' => $safe(fn() => (float) Pembayaran::whereIn('status', ['failed', 'expired'])->sum('jumlah'), 0),
-            'deposit_potential' => $safe(fn() => (float) Order::whereNotNull('deposit_fee')->sum('deposit_fee'), 0),
-            'deposit_deducted' => $safe(fn() => (float) Order::whereNotNull('deposit_deducted_at')->sum('deposit_fee'), 0),
+            'gross_revenue' => $safe(fn() => (float) (clone $paymentsQ)->where('status', 'paid')->sum('jumlah'), 0),
+            'pending_revenue' => $safe(fn() => (float) (clone $paymentsQ)->where('status', 'pending')->sum('jumlah'), 0),
+            'failed_revenue' => $safe(fn() => (float) (clone $paymentsQ)->whereIn('status', ['failed', 'expired'])->sum('jumlah'), 0),
+            'deposit_potential' => $safe(fn() => (float) (clone $ordersQ)->whereNotNull('deposit_fee')->sum('deposit_fee'), 0),
+            'deposit_deducted' => $safe(fn() => (float) (clone $ordersQ)->whereNotNull('deposit_deducted_at')->sum('deposit_fee'), 0),
         ];
         $finance['net_revenue'] = max(0, $finance['gross_revenue'] - $finance['deposit_deducted']);
         $finance['active_revenue'] = max(0, $finance['gross_revenue'] + $finance['pending_revenue']);
 
         $orderStatusBreakdown = [
-            'pending' => $safe(fn() => Order::where('status', 'pending')->count(), 0),
-            'confirmed' => $safe(fn() => Order::where('status', 'confirmed')->count(), 0),
-            'in_progress' => $safe(fn() => Order::where('status', 'in_progress')->count(), 0),
-            'done' => $safe(fn() => Order::where('status', 'done')->count(), 0),
-            'rejected' => $safe(fn() => Order::where('status', 'rejected')->count(), 0),
+            'pending' => $safe(fn() => (clone $ordersQ)->where('status', 'pending')->count(), 0),
+            'confirmed' => $safe(fn() => (clone $ordersQ)->where('status', 'confirmed')->count(), 0),
+            'in_progress' => $safe(fn() => (clone $ordersQ)->where('status', 'in_progress')->count(), 0),
+            'done' => $safe(fn() => (clone $ordersQ)->where('status', 'done')->count(), 0),
+            'rejected' => $safe(fn() => (clone $ordersQ)->where('status', 'rejected')->count(), 0),
         ];
 
         $difficultyBreakdown = [
-            'easy' => $safe(fn() => Order::where('difficulty_level', 'easy')->count(), 0),
-            'medium' => $safe(fn() => Order::where('difficulty_level', 'medium')->count(), 0),
-            'hard' => $safe(fn() => Order::where('difficulty_level', 'hard')->count(), 0),
+            'easy' => $safe(fn() => (clone $ordersQ)->where('difficulty_level', 'easy')->count(), 0),
+            'medium' => $safe(fn() => (clone $ordersQ)->where('difficulty_level', 'medium')->count(), 0),
+            'hard' => $safe(fn() => (clone $ordersQ)->where('difficulty_level', 'hard')->count(), 0),
         ];
 
         $tukangList = $safe(fn() => Tukang::orderBy('nama')->get(['id_tukang', 'nama']), collect());
