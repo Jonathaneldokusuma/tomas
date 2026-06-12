@@ -21,6 +21,7 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
   String _status = 'pending';
   String _message =
       'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
+  String? _reason;
 
   @override
   void initState() {
@@ -47,6 +48,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
     try {
       final latest = await TukangService.fetchLatestVerificationStatus();
       if (!mounted || latest == null) return;
+      final profile = await TukangService.getProfile();
+      final tukang = profile['tukang'] as Map<String, dynamic>?;
+      final reason = tukang?['rejection_reason']?.toString();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('tukang_status_verifikasi', latest);
@@ -70,13 +74,14 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
           '/login',
           arguments: {
             'message':
-                'Register ditolak oleh admin. Silakan daftar ulang atau hubungi admin.',
+                'Register ditolak oleh admin. ${reason?.isNotEmpty == true ? reason : 'Silakan daftar ulang atau hubungi admin.'}',
           },
         );
         return;
       }
 
       setState(() {
+        _reason = reason?.isNotEmpty == true ? reason : null;
         _message =
             'Akun kamu sedang ditinjau oleh tim admin. Biasanya proses ini selesai dalam 1×24 jam.';
       });
@@ -153,6 +158,26 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen> {
                 ),
               ),
               const SizedBox(height: 36),
+              if (_status == 'rejected' && _reason != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Text(
+                    'Alasan penolakan: $_reason',
+                    style: const TextStyle(
+                      color: Color(0xFF991B1B),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),

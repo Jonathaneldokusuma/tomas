@@ -555,15 +555,20 @@ class AdminController extends Controller
     public function rejectTukang($id)
     {
         $tukang = Tukang::findOrFail($id);
-        $tukang->update(['status_verifikasi' => 'rejected']);
+        $reason = trim((string) request()->input('reason', ''));
+        $tukang->update([
+            'status_verifikasi' => 'rejected',
+            'rejection_reason' => $reason !== '' ? $reason : 'Data verifikasi belum memenuhi syarat.',
+            'status_aktif' => 0,
+        ]);
         $this->logActivity('reject_tukang', 'tukang', $tukang->id_tukang, $tukang->nama);
 
         // ── Notifikasi FCM ke tukang ──
         $tokens = FcmToken::getTokens('tukang', $tukang->id_tukang);
         FcmService::sendToMany($tokens,
             'Verifikasi Ditolak',
-            'Maaf, verifikasi akun Anda ditolak oleh admin. Silakan hubungi admin untuk informasi lebih lanjut.',
-            ['type' => 'verifikasi', 'status' => 'rejected']
+            'Maaf, verifikasi akun Anda ditolak oleh admin. ' . ($tukang->rejection_reason ?? 'Silakan hubungi admin untuk informasi lebih lanjut.'),
+            ['type' => 'verifikasi', 'status' => 'rejected', 'reason' => $tukang->rejection_reason ?? '']
         );
 
         return back()->with('success', "Tukang {$tukang->nama} ditolak.");

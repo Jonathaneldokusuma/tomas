@@ -90,7 +90,8 @@
             </form>
             <form method="POST" action="{{ route('admin.tukang.reject', $t->id_tukang) }}">
                 @csrf
-                <button type="submit" onclick="return confirm('Tolak tukang ini?')"
+                <input type="hidden" name="reason" value="" class="reject-reason-input">
+                <button type="submit" onclick="return window.askRejectReason(this.form)"
                     style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">
                     <i class="fas fa-times" style="margin-right:4px"></i>Tolak
                 </button>
@@ -123,6 +124,14 @@
     @else
     <div style="border-top:1px solid #f1f5f9;padding:12px 20px;background:#fffbeb">
         <p style="font-size:12px;color:#92400e"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Tukang belum upload foto KTP & selfie.</p>
+    </div>
+    @endif
+    @if($t->status_verifikasi === 'rejected' && !empty($t->rejection_reason))
+    <div style="border-top:1px solid #f1f5f9;padding:12px 20px;background:#fef2f2">
+        <p style="font-size:12px;color:#991b1b">
+            <i class="fas fa-circle-exclamation" style="margin-right:6px"></i>
+            Alasan penolakan: {{ $t->rejection_reason }}
+        </p>
     </div>
     @endif
 </div>
@@ -184,6 +193,14 @@
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closePreview();
     });
+
+    window.askRejectReason = function (form) {
+        const reason = window.prompt('Masukkan alasan penolakan (opsional):', '');
+        if (reason === null) return false;
+        const input = form.querySelector('.reject-reason-input');
+        if (input) input.value = reason;
+        return confirm('Yakin ingin menolak tukang ini?');
+    };
 })();
 </script>
 
